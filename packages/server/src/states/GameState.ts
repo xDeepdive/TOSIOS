@@ -637,15 +637,15 @@ export class GameState extends Schema {
                 return;
             }
 
-            const action = botAI.update(currentTime, this.players, Array.from(this.props), this.walls);
+            const action = botAI.update(currentTime, this.players, this.monsters, Array.from(this.props), this.walls);
 
             if (action) {
                 // Add bot action to action queue
                 this.actions.push(action);
 
-                // Debug logging (remove after testing)
-                if (Math.random() < 0.01) { // Log 1% of actions to avoid spam
-                    console.log(`[Bot ${bot.name}] Action: ${action.type}, isAlive: ${bot.isAlive}, lives: ${bot.lives}`);
+                // Debug logging
+                if (Math.random() < 0.02) { // Log 2% of actions to see bot activity
+                    console.log(`[Bot ${bot.name}] ${action.type} (Lives: ${bot.lives}, Score: ${bot.score})`);
                 }
             }
         });

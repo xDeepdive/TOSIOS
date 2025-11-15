@@ -1,12 +1,13 @@
 import { Constants, Geometry, Maths, Models } from '@tosios/common';
 import { Player } from '../entities/Player';
 import { Prop } from '../entities/Prop';
+import { Monster } from '../entities/Monster';
 import { Collisions } from '@tosios/common';
 
 export type BotDifficulty = 'easy' | 'medium' | 'hard';
 
 export interface BotTarget {
-    type: 'player' | 'powerup' | 'health';
+    type: 'player' | 'monster' | 'powerup' | 'health';
     x: number;
     y: number;
     distance: number;
@@ -17,10 +18,13 @@ export class BotAI {
     private bot: Player;
     private difficulty: BotDifficulty;
     private lastActionTime: number = 0;
+    private lastShootTime: number = 0; // Track last shoot time separately
     private reactionTime: number;
     private aimError: number;
     private currentTarget: BotTarget | null = null;
     private lastUpdateTime: number = 0;
+    private wanderDirection: { x: number; y: number; angle: number } | null = null;
+    private wanderChangeTime: number = 0;
 
     constructor(bot: Player, difficulty: BotDifficulty = 'medium') {
         this.bot = bot;
@@ -50,6 +54,7 @@ export class BotAI {
     update(
         currentTime: number,
         players: Map<string, Player>,
+        monsters: Map<string, Monster>,
         props: Prop[],
         walls: Collisions.TreeCollider,
     ): Models.ActionJSON | null {
@@ -64,10 +69,10 @@ export class BotAI {
         }
 
         // Evaluate targets
-        this.evaluateTargets(players, props);
+        this.evaluateTargets(players, monsters, props);
 
         // Decide action based on current state
-        const action = this.decideAction(currentTime, players, walls);
+        const action = this.decideAction(currentTime, players, monsters, walls);
 
         // Update last action time only if we generated an action
         if (action) {
@@ -80,7 +85,7 @@ export class BotAI {
     /**
      * Evaluate and prioritize targets
      */
-    private evaluateTargets(players: Map<string, Player>, props: Prop[]) {
+    private evaluateTargets(players: Map<string, Player>, monsters: Map<string, Monster>, props: Prop[]) {
         const targets: BotTarget[] = [];
 
         // Evaluate enemy players
@@ -106,6 +111,26 @@ export class BotAI {
                 type: 'player',
                 x: player.x,
                 y: player.y,
+                distance,
+                priority,
+            });
+        });
+
+        // Evaluate monsters (bats) - high priority threats!
+        monsters.forEach((monster) => {
+            if (!monster.isAlive) {
+                return;
+            }
+
+            const distance = Maths.getDistance(this.bot.x, this.bot.y, monster.x, monster.y);
+
+            // High priority for nearby monsters
+            const priority = 120 - distance / 8; // Higher priority than players!
+
+            targets.push({
+                type: 'monster',
+                x: monster.x,
+                y: monster.y,
                 distance,
                 priority,
             });
@@ -161,12 +186,14 @@ export class BotAI {
     private decideAction(
         currentTime: number,
         players: Map<string, Player>,
+        monsters: Map<string, Monster>,
         walls: Collisions.TreeCollider,
     ): Models.ActionJSON | null {
-        // Find closest enemy for shooting
-        let closestEnemy: BotTarget | null = null;
-        let enemyDistance = Infinity;
+        // Find closest threat (player or monster) for shooting
+        let closestThreat: BotTarget | null = null;
+        let threatDistance = Infinity;
 
+        // Check players
         players.forEach((player) => {
             if (player.playerId === this.bot.playerId || !player.isAlive) {
                 return;
@@ -176,9 +203,9 @@ export class BotAI {
             }
 
             const distance = Maths.getDistance(this.bot.x, this.bot.y, player.x, player.y);
-            if (distance < enemyDistance) {
-                enemyDistance = distance;
-                closestEnemy = {
+            if (distance < threatDistance) {
+                threatDistance = distance;
+                closestThreat = {
                     type: 'player',
                     x: player.x,
                     y: player.y,
@@ -188,18 +215,48 @@ export class BotAI {
             }
         });
 
-        // Always shoot if enemy is in range (aggressive behavior)
-        if (closestEnemy && enemyDistance < Constants.BOTS_SHOOT_DISTANCE) {
-            return this.getShootAction(closestEnemy, currentTime);
+        // Check monsters - prioritize if they're closer
+        monsters.forEach((monster) => {
+            if (!monster.isAlive) {
+                return;
+            }
+
+            const distance = Maths.getDistance(this.bot.x, this.bot.y, monster.x, monster.y);
+            if (distance < threatDistance) {
+                threatDistance = distance;
+                closestThreat = {
+                    type: 'monster',
+                    x: monster.x,
+                    y: monster.y,
+                    distance,
+                    priority: 120, // Higher priority!
+                };
+            }
+        });
+
+        // Shoot at threats occasionally (not every frame, so bot can also move)
+        const shootInterval = Constants.BULLET_RATE; // Same as bullet rate
+        if (
+            closestThreat &&
+            threatDistance < Constants.BOTS_SHOOT_DISTANCE &&
+            currentTime - this.lastShootTime > shootInterval
+        ) {
+            this.lastShootTime = currentTime;
+            return this.getShootAction(closestThreat, currentTime);
         }
 
-        // Move towards target (or wander)
-        if (this.currentTarget) {
-            return this.getMoveTowardTargetAction(this.currentTarget, walls);
+        // ALWAYS move (primary action)
+        // Priority: Move towards threat > Move towards target > Wander
+        if (closestThreat) {
+            // Move towards closest threat (player or monster)
+            return this.getMoveTowardTargetAction(closestThreat, walls, currentTime);
+        } else if (this.currentTarget) {
+            // Move towards target (powerup/health)
+            return this.getMoveTowardTargetAction(this.currentTarget, walls, currentTime);
+        } else {
+            // Wander randomly
+            return this.getWanderAction(walls, currentTime);
         }
-
-        // No target, wander randomly
-        return this.getWanderAction(walls);
     }
 
     /**
@@ -228,6 +285,7 @@ export class BotAI {
     private getMoveTowardTargetAction(
         target: BotTarget,
         walls: Collisions.TreeCollider,
+        currentTime?: number,
     ): Models.ActionJSON | null {
         const dirX = target.x - this.bot.x;
         const dirY = target.y - this.bot.y;
@@ -251,28 +309,37 @@ export class BotAI {
                 y: normalizedY,
                 rotation,
             },
-            ts: Date.now(),
+            ts: currentTime || Date.now(),
             playerId: this.bot.playerId,
         };
     }
 
     /**
-     * Wander randomly
+     * Wander randomly - keeps same direction for a while to avoid jittery movement
      */
-    private getWanderAction(walls: Collisions.TreeCollider): Models.ActionJSON | null {
-        // Random direction
-        const angle = Math.random() * Math.PI * 2;
-        const dirX = Math.cos(angle);
-        const dirY = Math.sin(angle);
+    private getWanderAction(walls: Collisions.TreeCollider, currentTime: number): Models.ActionJSON | null {
+        // Change wander direction every 2 seconds
+        const wanderDuration = 2000;
+
+        if (!this.wanderDirection || currentTime - this.wanderChangeTime > wanderDuration) {
+            // Pick a new random direction
+            const angle = Math.random() * Math.PI * 2;
+            this.wanderDirection = {
+                x: Math.cos(angle),
+                y: Math.sin(angle),
+                angle,
+            };
+            this.wanderChangeTime = currentTime;
+        }
 
         return {
             type: 'move',
             value: {
-                x: dirX,
-                y: dirY,
-                rotation: angle,
+                x: this.wanderDirection.x,
+                y: this.wanderDirection.y,
+                rotation: this.wanderDirection.angle,
             },
-            ts: Date.now(),
+            ts: currentTime,
             playerId: this.bot.playerId,
         };
     }

@@ -5,6 +5,7 @@ export * from './Bullet';
 export * from './Chat';
 export * from './GameMode';
 export * from './Hazard';
+export * from './KillFeed';
 export * from './Leaderboard';
 export * from './Message';
 export * from './Monster';

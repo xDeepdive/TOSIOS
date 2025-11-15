@@ -624,7 +624,7 @@ export class GameState extends Schema {
     // Bots
     //
     private updateBots() {
-        if (!Constants.BOTS_ENABLED) {
+        if (!Constants.BOTS_ENABLED || this.game.state !== 'game') {
             return;
         }
 
@@ -632,11 +632,21 @@ export class GameState extends Schema {
 
         // Update each bot AI
         this.botAIs.forEach((botAI, botId) => {
+            const bot = this.players.get(botId);
+            if (!bot) {
+                return;
+            }
+
             const action = botAI.update(currentTime, this.players, Array.from(this.props), this.walls);
 
             if (action) {
                 // Add bot action to action queue
                 this.actions.push(action);
+
+                // Debug logging (remove after testing)
+                if (Math.random() < 0.01) { // Log 1% of actions to avoid spam
+                    console.log(`[Bot ${bot.name}] Action: ${action.type}, isAlive: ${bot.isAlive}, lives: ${bot.lives}`);
+                }
             }
         });
 

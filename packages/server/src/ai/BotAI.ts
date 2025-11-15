@@ -53,7 +53,7 @@ export class BotAI {
         props: Prop[],
         walls: Collisions.TreeCollider,
     ): Models.ActionJSON | null {
-        // Throttle updates
+        // Throttle updates (faster now - every 50ms)
         if (currentTime - this.lastUpdateTime < Constants.BOTS_UPDATE_INTERVAL) {
             return null;
         }
@@ -63,17 +63,13 @@ export class BotAI {
             return null;
         }
 
-        // Check reaction time
-        if (currentTime - this.lastActionTime < this.reactionTime) {
-            return null;
-        }
-
         // Evaluate targets
         this.evaluateTargets(players, props);
 
         // Decide action based on current state
         const action = this.decideAction(currentTime, players, walls);
 
+        // Update last action time only if we generated an action
         if (action) {
             this.lastActionTime = currentTime;
         }
@@ -167,28 +163,47 @@ export class BotAI {
         players: Map<string, Player>,
         walls: Collisions.TreeCollider,
     ): Models.ActionJSON | null {
-        if (!this.currentTarget) {
-            // No target, wander randomly
-            return this.getWanderAction(walls);
-        }
+        // Find closest enemy for shooting
+        let closestEnemy: BotTarget | null = null;
+        let enemyDistance = Infinity;
 
-        const targetDistance = this.currentTarget.distance;
-
-        // If target is a player and in shooting range
-        if (this.currentTarget.type === 'player' && targetDistance < Constants.BOTS_SHOOT_DISTANCE) {
-            // Try to maintain distance while shooting
-            const action = this.getShootAction(this.currentTarget, currentTime);
-            if (action) {
-                return action;
+        players.forEach((player) => {
+            if (player.playerId === this.bot.playerId || !player.isAlive) {
+                return;
             }
+            if (this.bot.team && player.team === this.bot.team) {
+                return;
+            }
+
+            const distance = Maths.getDistance(this.bot.x, this.bot.y, player.x, player.y);
+            if (distance < enemyDistance) {
+                enemyDistance = distance;
+                closestEnemy = {
+                    type: 'player',
+                    x: player.x,
+                    y: player.y,
+                    distance,
+                    priority: 100,
+                };
+            }
+        });
+
+        // Always shoot if enemy is in range (aggressive behavior)
+        if (closestEnemy && enemyDistance < Constants.BOTS_SHOOT_DISTANCE) {
+            return this.getShootAction(closestEnemy, currentTime);
         }
 
-        // Move towards target
-        return this.getMoveTowardTargetAction(this.currentTarget, walls);
+        // Move towards target (or wander)
+        if (this.currentTarget) {
+            return this.getMoveTowardTargetAction(this.currentTarget, walls);
+        }
+
+        // No target, wander randomly
+        return this.getWanderAction(walls);
     }
 
     /**
-     * Get a shoot action
+     * Get a shoot action (simplified - just shoot, don't wait for perfect rotation)
      */
     private getShootAction(target: BotTarget, currentTime: number): Models.ActionJSON | null {
         const angle = Math.atan2(target.y - this.bot.y, target.x - this.bot.x);
@@ -196,19 +211,7 @@ export class BotAI {
         // Add aim error based on difficulty
         const aimWithError = angle + (Math.random() - 0.5) * this.aimError;
 
-        // First rotate to face target
-        if (Math.abs(this.bot.rotation - aimWithError) > 0.1) {
-            return {
-                type: 'rotate',
-                value: {
-                    rotation: aimWithError,
-                },
-                ts: currentTime,
-                playerId: this.bot.playerId,
-            };
-        }
-
-        // Then shoot
+        // Just shoot directly - no rotation check
         return {
             type: 'shoot',
             value: {

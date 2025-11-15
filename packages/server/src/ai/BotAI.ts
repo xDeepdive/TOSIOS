@@ -315,11 +315,11 @@ export class BotAI {
     }
 
     /**
-     * Wander randomly - keeps same direction for a while to avoid jittery movement
+     * Wander randomly - changes direction frequently for unpredictable movement
      */
     private getWanderAction(walls: Collisions.TreeCollider, currentTime: number): Models.ActionJSON | null {
-        // Change wander direction every 2 seconds
-        const wanderDuration = 2000;
+        // Change direction more frequently for varied movement (300-600ms)
+        const wanderDuration = 300 + Math.random() * 300;
 
         if (!this.wanderDirection || currentTime - this.wanderChangeTime > wanderDuration) {
             // Pick a new random direction
@@ -332,12 +332,16 @@ export class BotAI {
             this.wanderChangeTime = currentTime;
         }
 
+        // Add slight random variation to direction each frame for more natural movement
+        const dirVariation = (Math.random() - 0.5) * 0.2; // Small angle variation
+        const variedAngle = this.wanderDirection.angle + dirVariation;
+
         return {
             type: 'move',
             value: {
-                x: this.wanderDirection.x,
-                y: this.wanderDirection.y,
-                rotation: this.wanderDirection.angle,
+                x: Math.cos(variedAngle),
+                y: Math.sin(variedAngle),
+                rotation: variedAngle,
             },
             ts: currentTime,
             playerId: this.bot.playerId,

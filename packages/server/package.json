@@ -3,6 +3,10 @@
     "version": "0.1.0",
     "private": true,
     "main": "./src/index.ts",
+    "scripts": {
+        "start": "node dist/index.js",
+        "build": "echo 'Build handled by root workspace'"
+    },
     "dependencies": {
         "@colyseus/monitor": "^0.14.0",
         "@colyseus/schema": "^1.0.3",

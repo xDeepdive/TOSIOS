@@ -1,19 +1,29 @@
-# Root
-.gitignore
-.prettierrc
-CHANGELOG.md
-docker-compose.yml
-LICENSE
-README.md
+# Dependencies
+node_modules
+packages/*/node_modules
+
+# Build output (client)
+packages/client/public
+
+# Development
+.git
+.github
+.vscode
+*.md
+.env.local
+.env.development
+.DS_Store
 
 # Logs
-yarn-error.log
+*.log
+npm-debug.log*
+yarn-debug.log*
 
-# Dependencies
-**/node_modules
-**/dist
+# Testing
+coverage
+.nyc_output
 
-# Client
-**/public/assets
-**/public/script.css
-**/public/script.js
+# Misc
+.cache
+dist-ssr
+*.local

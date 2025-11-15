@@ -1,25 +1,41 @@
-FROM node:14.18.2-alpine
+# TOSIOS Server Dockerfile for Production Deployment
+# Works with Railway, Render, Fly.io, and other Docker platforms
 
-WORKDIR /usr/src/app
+FROM node:18-alpine AS builder
 
-ARG REACT_APP_GA_TRACKING_ID
+# Set working directory
+WORKDIR /app
 
-# Dependencies
-COPY ./package.json .
-COPY ./yarn.lock .
-COPY ./packages/client/package.json ./packages/client/
-COPY ./packages/common/package.json ./packages/common/
-COPY ./packages/server/package.json ./packages/server/
-RUN yarn
+# Copy package files
+COPY package*.json ./
+COPY packages/common/package*.json ./packages/common/
+COPY packages/server/package*.json ./packages/server/
 
-# Files
+# Install dependencies
+RUN npm install
+
+# Copy source code
 COPY . .
 
-# Build
-RUN BUILD_MODE=production yarn build
+# Build the project (creates packages/server/dist/index.js)
+RUN npm run build
 
-# Port
+# Production stage
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy built files and dependencies
+COPY --from=builder /app/packages/server/dist ./packages/server/dist
+COPY --from=builder /app/packages/server/package.json ./packages/server/
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+# Set environment to production
+ENV NODE_ENV=production
+
+# Expose port (configurable via PORT env var)
 EXPOSE 3001
 
-# Serve
-CMD [ "yarn", "serve" ]
+# Start server
+CMD ["node", "packages/server/dist/index.js"]

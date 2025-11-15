@@ -37,6 +37,16 @@ export interface Stats {
     players: Models.PlayerJSON[];
     playersCount: number;
     playersMaxCount: number;
+    // New player stats
+    playerLevel?: number;
+    playerScore?: number;
+    playerKillStreak?: number;
+    playerXP?: number;
+    playerHasSpeedBoost?: boolean;
+    playerHasShield?: boolean;
+    playerHasRapidFire?: boolean;
+    playerIsInvisible?: boolean;
+    playerHasDoubleDamage?: boolean;
 }
 
 /**
@@ -483,6 +493,18 @@ export class Game {
             maxLives: player.maxLives,
             kills: player.kills,
             team: player.team,
+            score: player.score,
+            level: player.level,
+            killStreak: player.killStreak,
+            xp: player.xp,
+            accuracy: player.accuracy,
+            deaths: player.deaths,
+            highestKillStreak: player.highestKillStreak,
+            hasSpeedBoost: player.hasSpeedBoost,
+            hasShield: player.hasShield,
+            hasRapidFire: player.hasRapidFire,
+            isInvisible: player.isInvisible,
+            hasDoubleDamage: player.hasDoubleDamage,
         }));
 
         return {
@@ -496,6 +518,16 @@ export class Game {
             players,
             playersCount: players.length,
             playersMaxCount: this.maxPlayers,
+            // New stats for the current player
+            playerLevel: this.me ? this.me.level : 1,
+            playerScore: this.me ? this.me.score : 0,
+            playerKillStreak: this.me ? this.me.killStreak : 0,
+            playerXP: this.me ? this.me.xp : 0,
+            playerHasSpeedBoost: this.me ? this.me.hasSpeedBoost : false,
+            playerHasShield: this.me ? this.me.hasShield : false,
+            playerHasRapidFire: this.me ? this.me.hasRapidFire : false,
+            playerIsInvisible: this.me ? this.me.isInvisible : false,
+            playerHasDoubleDamage: this.me ? this.me.hasDoubleDamage : false,
         };
     };
 

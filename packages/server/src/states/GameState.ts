@@ -93,6 +93,12 @@ export class GameState extends Schema {
                     break;
             }
         }
+
+        // Update powerup timers for all players
+        const currentTime = Date.now();
+        this.players.forEach((player) => {
+            player.updatePowerups(currentTime);
+        });
     }
 
     private updateMonsters() {
@@ -132,6 +138,7 @@ export class GameState extends Schema {
         this.setPlayersPositionRandomly();
         this.setPlayersActive(true);
         this.propsAdd(Constants.FLASKS_COUNT);
+        this.powerupsAdd(Constants.POWERUPS_COUNT); // Add powerups!
         this.monstersAdd(Constants.MONSTERS_COUNT);
         this.onMessage({
             type: 'start',
@@ -231,7 +238,11 @@ export class GameState extends Schema {
             return;
         }
 
-        player.move(dir.x, dir.y, Constants.PLAYER_SPEED);
+        // Apply speed boost if active
+        const speed = player.hasSpeedBoost
+            ? Constants.PLAYER_SPEED * Constants.POWERUP_SPEED_BOOST_MULTIPLIER
+            : Constants.PLAYER_SPEED;
+        player.move(dir.x, dir.y, speed);
 
         // Collisions: Map
         const clampedPosition = this.map.clampCircle(player.body);
@@ -244,12 +255,13 @@ export class GameState extends Schema {
         // Acknoledge last treated action
         player.ack = ts;
 
-        // Collisions: Props
+        // Collisions: Props and Powerups
         if (!player.isAlive) {
             return;
         }
 
         let prop: Prop;
+        const currentTime = Date.now();
         for (let i: number = 0; i < this.props.length; i++) {
             prop = this.props[i];
             if (!prop.active) {
@@ -263,6 +275,14 @@ export class GameState extends Schema {
                             prop.active = false;
                             player.heal();
                         }
+                        break;
+                    case 'speed-boost':
+                    case 'shield':
+                    case 'rapid-fire':
+                    case 'invisibility':
+                    case 'double-damage':
+                        prop.active = false;
+                        player.activatePowerup(prop.type, currentTime);
                         break;
                     default:
                         break;
@@ -292,6 +312,7 @@ export class GameState extends Schema {
             return;
         }
         player.lastShootAt = ts;
+        player.recordShot(false); // Track shot fired (will update to true if hit)
 
         // Make the bullet start at the staff
         const bulletX = player.x + Math.cos(angle) * Constants.PLAYER_WEAPON_SIZE;
@@ -323,7 +344,7 @@ export class GameState extends Schema {
             return;
         }
 
-        player.setKills(player.kills + 1);
+        player.addKill(); // Now tracks kill streaks, score, and XP!
     }
 
     playerRemove(id: string) {
@@ -489,6 +510,14 @@ export class GameState extends Schema {
             }
 
             bullet.active = false;
+
+            // Track hit for accuracy
+            const shooter = this.players.get(bullet.playerId);
+            if (shooter) {
+                shooter.shotsHit += 1;
+                shooter.accuracy = shooter.shotsFired > 0 ? (shooter.shotsHit / shooter.shotsFired) * 100 : 0;
+            }
+
             player.hurt();
 
             if (!player.isAlive) {
@@ -551,6 +580,25 @@ export class GameState extends Schema {
 
         while (this.props.length > 0) {
             this.props.pop();
+        }
+    }
+
+    //
+    // Powerups
+    //
+    private powerupsAdd(count: number) {
+        const powerupTypes: Models.PropType[] = ['speed-boost', 'shield', 'rapid-fire', 'invisibility', 'double-damage'];
+
+        for (let i = 0; i < count; i++) {
+            const body = this.getPositionRandomly(
+                new Geometry.CircleBody(0, 0, Constants.POWERUP_SIZE / 2),
+                false,
+                true
+            );
+            const randomType = powerupTypes[Maths.getRandomInt(0, powerupTypes.length - 1)];
+            const powerup = new Prop(randomType, body.x, body.y, body.radius);
+
+            this.props.push(powerup);
         }
     }
 }

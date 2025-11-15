@@ -116,7 +116,16 @@ function PlayersListHeader(props: { team?: Types.Teams }): React.ReactElement {
                 <Text style={textStyle}>Name</Text>
             </TableHeader>
             <TableHeader>
+                <Text style={textStyle}>Lvl</Text>
+            </TableHeader>
+            <TableHeader>
+                <Text style={textStyle}>Score</Text>
+            </TableHeader>
+            <TableHeader>
                 <Text style={textStyle}>Kills</Text>
+            </TableHeader>
+            <TableHeader>
+                <Text style={textStyle}>Streak</Text>
             </TableHeader>
         </TableRow>
     );
@@ -129,7 +138,7 @@ function PlayersList(props: { players: Models.PlayerJSON[]; playerId: string }):
     const { players, playerId } = props;
 
     return players
-        .sort((a, b) => Sorts.sortNumberDesc(a.kills, b.kills))
+        .sort((a, b) => Sorts.sortNumberDesc(a.score || a.kills, b.score || b.kills))
         .map((player, index) => (
             <Fragment key={index}>
                 <PlayerListItem key={player.playerId} index={index} player={player} playerId={playerId} />
@@ -157,7 +166,16 @@ function PlayerListItem(props: { index: number; player: Models.PlayerJSON; playe
                 <Text style={style}>{isMe ? 'You' : player.name}</Text>
             </TableCell>
             <TableCell>
+                <Text style={style}>{player.level || 1}</Text>
+            </TableCell>
+            <TableCell>
+                <Text style={style}>{player.score || 0}</Text>
+            </TableCell>
+            <TableCell>
                 <Text style={style}>{player.kills}</Text>
+            </TableCell>
+            <TableCell>
+                <Text style={style}>{player.killStreak || 0}</Text>
             </TableCell>
         </TableRow>
     );

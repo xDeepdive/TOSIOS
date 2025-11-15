@@ -21,6 +21,16 @@ export interface HUDProps {
     playersMaxCount: number;
     messages: Models.MessageJSON[];
     announce?: string;
+    // New stats
+    playerLevel?: number;
+    playerScore?: number;
+    playerKillStreak?: number;
+    playerXP?: number;
+    playerHasSpeedBoost?: boolean;
+    playerHasShield?: boolean;
+    playerHasRapidFire?: boolean;
+    playerIsInvisible?: boolean;
+    playerHasDoubleDamage?: boolean;
 }
 
 /**
@@ -48,6 +58,15 @@ export const HUD = React.memo(
             playersMaxCount,
             messages,
             announce,
+            playerLevel,
+            playerScore,
+            playerKillStreak,
+            playerXP,
+            playerHasSpeedBoost,
+            playerHasShield,
+            playerHasRapidFire,
+            playerIsInvisible,
+            playerHasDoubleDamage,
         } = props;
         const [leaderboardOpened, setLeaderboardOpened] = React.useState(false);
         const [menuOpened, setMenuOpened] = React.useState(false);
@@ -96,7 +115,21 @@ export const HUD = React.memo(
         return (
             <View flex center fullscreen style={styles.hud}>
                 {/* Health */}
-                <Health name={playerName} lives={playerLives} maxLives={playerMaxLives} style={styles.health} />
+                <Health
+                    name={playerName}
+                    lives={playerLives}
+                    maxLives={playerMaxLives}
+                    style={styles.health}
+                    level={playerLevel}
+                    score={playerScore}
+                    killStreak={playerKillStreak}
+                    xp={playerXP}
+                    hasSpeedBoost={playerHasSpeedBoost}
+                    hasShield={playerHasShield}
+                    hasRapidFire={playerHasRapidFire}
+                    isInvisible={playerIsInvisible}
+                    hasDoubleDamage={playerHasDoubleDamage}
+                />
 
                 {/* Time */}
                 <Time mode={gameMode} endsAt={gameModeEndsAt} style={styles.time} />

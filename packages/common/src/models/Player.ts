@@ -16,6 +16,20 @@ export interface PlayerJSON {
     color: string;
     kills: number;
     ack?: number;
+    // New stats
+    score?: number;
+    level?: number;
+    xp?: number;
+    killStreak?: number;
+    highestKillStreak?: number;
+    accuracy?: number;
+    deaths?: number;
+    // Powerups
+    hasSpeedBoost?: boolean;
+    hasShield?: boolean;
+    hasRapidFire?: boolean;
+    isInvisible?: boolean;
+    hasDoubleDamage?: boolean;
 }
 
 export function movePlayer(

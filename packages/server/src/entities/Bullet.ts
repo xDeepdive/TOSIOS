@@ -26,6 +26,12 @@ export class Bullet extends Circle {
     @type('number')
     public shotAt: number;
 
+    @type('number')
+    public damage: number = 1;
+
+    @type('string')
+    public weaponType: string = 'pistol';
+
     // Init
     constructor(
         playerId: string,
@@ -36,6 +42,8 @@ export class Bullet extends Circle {
         rotation: number,
         color: string,
         shotAt: number,
+        damage: number = 1,
+        weaponType: string = 'pistol',
     ) {
         super(x, y, radius);
         this.playerId = playerId;
@@ -46,6 +54,8 @@ export class Bullet extends Circle {
         this.active = true;
         this.color = color;
         this.shotAt = shotAt;
+        this.damage = damage;
+        this.weaponType = weaponType;
     }
 
     // Methods
@@ -63,6 +73,8 @@ export class Bullet extends Circle {
         rotation: number,
         color: string,
         shotAt: number,
+        damage: number = 1,
+        weaponType: string = 'pistol',
     ) {
         this.playerId = playerId;
         this.team = team;
@@ -75,5 +87,7 @@ export class Bullet extends Circle {
         this.active = true;
         this.color = color;
         this.shotAt = shotAt;
+        this.damage = damage;
+        this.weaponType = weaponType;
     }
 }

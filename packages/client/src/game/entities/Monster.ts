@@ -21,15 +21,19 @@ export class Monster extends BaseEntity {
 
     private _shadow: Graphics;
 
+    public monsterType: Models.MonsterType;
+
     // Init
     constructor(monster: Models.MonsterJSON) {
         super({
             x: monster.x,
             y: monster.y,
             radius: monster.radius,
-            textures: MonstersTextures.Bat,
+            textures: getMonsterTextures(monster.type),
             zIndex: ZINDEXES.MONSTER,
         });
+
+        this.monsterType = monster.type;
 
         // Shadow
         this._shadow = new Graphics();
@@ -109,4 +113,14 @@ function getDirection(rotation: number): MonsterDirection {
     }
 
     return 'left';
+}
+
+/**
+ * Get textures for different monster types.
+ * TODO: Add unique sprites for each monster type
+ */
+function getMonsterTextures(type: Models.MonsterType): any {
+    // For now, all monsters use bat texture
+    // Future: Add unique textures for spider, golem, ghost, boss
+    return MonstersTextures.Bat;
 }

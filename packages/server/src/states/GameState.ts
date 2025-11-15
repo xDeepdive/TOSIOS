@@ -31,6 +31,11 @@ export class GameState extends Schema {
 
     private botCounter: number = 0; // Counter for bot IDs
 
+    // Monster wave system
+    private waveNumber: number = 0;
+
+    private lastWaveTime: number = 0;
+
     private onMessage: (message: Models.MessageJSON) => void;
 
     //
@@ -111,6 +116,47 @@ export class GameState extends Schema {
         this.monsters.forEach((monster, monsterId) => {
             this.monsterUpdate(monsterId);
         });
+
+        // Monster wave system
+        if (Constants.MONSTER_WAVES_ENABLED && this.game.state === 'game') {
+            this.updateMonsterWaves();
+        }
+    }
+
+    private updateMonsterWaves() {
+        const currentTime = Date.now();
+        const monstersAlive = Array.from(this.monsters.values()).filter((m) => m.isAlive).length;
+
+        // Spawn new wave if:
+        // 1. Enough time has passed since last wave
+        // 2. Not at maximum monsters
+        if (
+            currentTime - this.lastWaveTime > Constants.MONSTER_WAVE_INTERVAL &&
+            monstersAlive < Constants.MONSTER_WAVE_MAX_MONSTERS
+        ) {
+            this.waveNumber++;
+            const monstersToSpawn = Math.min(
+                Constants.MONSTER_WAVE_INCREMENT,
+                Constants.MONSTER_WAVE_MAX_MONSTERS - monstersAlive,
+            );
+
+            // Increase boss chance with each wave (caps at 30%)
+            const bossChance = Math.min(0.05 + this.waveNumber * 0.02, 0.3);
+
+            this.monstersAdd(monstersToSpawn, bossChance);
+            this.lastWaveTime = currentTime;
+
+            // Notify players of new wave
+            this.onMessage({
+                type: 'wave',
+                from: 'server',
+                ts: currentTime,
+                params: {
+                    wave: this.waveNumber,
+                    count: monstersToSpawn,
+                },
+            });
+        }
     }
 
     private updateBullets() {
@@ -158,6 +204,11 @@ export class GameState extends Schema {
         this.propsAdd(Constants.FLASKS_COUNT);
         this.powerupsAdd(Constants.POWERUPS_COUNT); // Add powerups!
         this.monstersAdd(Constants.MONSTERS_COUNT);
+
+        // Reset monster wave system
+        this.waveNumber = 0;
+        this.lastWaveTime = Date.now();
+
         this.onMessage({
             type: 'start',
             from: 'server',
@@ -444,10 +495,43 @@ export class GameState extends Schema {
     //
     // Monsters
     //
-    private monstersAdd = (count: number) => {
+    private monstersAdd = (count: number, bossChance: number = 0.1) => {
         for (let i = 0; i < count; i++) {
+            // Determine monster type (weighted random)
+            let monsterType: Models.MonsterType;
+            let size: number;
+            let lives: number;
+
+            const rand = Math.random();
+            if (rand < bossChance) {
+                // Boss - rare (10% by default)
+                monsterType = 'boss';
+                size = Constants.MONSTER_BOSS_SIZE;
+                lives = Constants.MONSTER_BOSS_LIVES;
+            } else if (rand < 0.3) {
+                // Spider - 20% chance (fast, low health)
+                monsterType = 'spider';
+                size = Constants.MONSTER_SPIDER_SIZE;
+                lives = Constants.MONSTER_SPIDER_LIVES;
+            } else if (rand < 0.5) {
+                // Golem - 20% chance (slow, high health)
+                monsterType = 'golem';
+                size = Constants.MONSTER_GOLEM_SIZE;
+                lives = Constants.MONSTER_GOLEM_LIVES;
+            } else if (rand < 0.65) {
+                // Ghost - 15% chance (teleports)
+                monsterType = 'ghost';
+                size = Constants.MONSTER_GHOST_SIZE;
+                lives = Constants.MONSTER_GHOST_LIVES;
+            } else {
+                // Bat - 35% chance (balanced)
+                monsterType = 'bat';
+                size = Constants.MONSTER_BAT_SIZE;
+                lives = Constants.MONSTER_BAT_LIVES;
+            }
+
             const body = this.getPositionRandomly(
-                new Geometry.CircleBody(0, 0, Constants.MONSTER_SIZE / 2),
+                new Geometry.CircleBody(0, 0, size / 2),
                 false,
                 false,
             );
@@ -457,10 +541,11 @@ export class GameState extends Schema {
                 body.width / 2,
                 this.map.width,
                 this.map.height,
-                Constants.MONSTER_LIVES,
+                lives,
+                monsterType,
             );
 
-            this.monsters.set(Maths.getRandomInt(0, 1000).toString(), monster);
+            this.monsters.set(Maths.getRandomInt(0, 100000).toString(), monster);
         }
     };
 
@@ -481,15 +566,30 @@ export class GameState extends Schema {
             }
 
             monster.attack();
-            player.hurt();
+
+            // Apply damage (supports different damage amounts per monster type)
+            for (let dmg = 0; dmg < monster.attackDamage; dmg++) {
+                if (player.isAlive) {
+                    player.hurt();
+                }
+            }
 
             if (!player.isAlive) {
+                // Get monster name for death message
+                const monsterNames: Record<Models.MonsterType, string> = {
+                    bat: 'a Bat',
+                    spider: 'a Spider',
+                    golem: 'a Golem',
+                    ghost: 'a Ghost',
+                    boss: 'the BOSS',
+                };
+
                 this.onMessage({
                     type: 'killed',
                     from: 'server',
                     ts: Date.now(),
                     params: {
-                        killerName: 'A bat',
+                        killerName: monsterNames[monster.monsterType] || 'a monster',
                         killedName: player.name,
                     },
                 });
@@ -563,6 +663,19 @@ export class GameState extends Schema {
             monster.hurt();
 
             if (!monster.isAlive) {
+                // Monster loot drops
+                if (Constants.MONSTER_LOOT_ENABLED) {
+                    const dropChance =
+                        monster.monsterType === 'boss'
+                            ? Constants.MONSTER_BOSS_LOOT_DROP_CHANCE
+                            : Constants.MONSTER_LOOT_DROP_CHANCE;
+
+                    if (Math.random() < dropChance) {
+                        // Drop a random powerup at monster's location
+                        this.powerupAdd(monster.x, monster.y);
+                    }
+                }
+
                 this.monsterRemove(monsterId);
             }
         });
@@ -618,6 +731,13 @@ export class GameState extends Schema {
 
             this.props.push(powerup);
         }
+    }
+
+    private powerupAdd(x: number, y: number) {
+        const powerupTypes: Models.PropType[] = ['speed-boost', 'shield', 'rapid-fire', 'invisibility', 'double-damage'];
+        const randomType = powerupTypes[Maths.getRandomInt(0, powerupTypes.length - 1)];
+        const powerup = new Prop(randomType, x, y, Constants.POWERUP_SIZE / 2);
+        this.props.push(powerup);
     }
 
     //

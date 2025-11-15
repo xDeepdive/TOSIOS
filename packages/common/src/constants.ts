@@ -45,6 +45,60 @@ export const MONSTER_PATROL_DURATION_MIN = 1000;
 export const MONSTER_PATROL_DURATION_MAX = 3000;
 export const MONSTER_ATTACK_BACKOFF = 3000;
 
+// Monster Types
+export const MONSTER_TYPES = ['bat', 'spider', 'golem', 'ghost', 'boss'] as const;
+
+// Bat (original - balanced)
+export const MONSTER_BAT_SPEED_PATROL = 0.75;
+export const MONSTER_BAT_SPEED_CHASE = 1.25;
+export const MONSTER_BAT_LIVES = 3;
+export const MONSTER_BAT_SIZE = 32;
+export const MONSTER_BAT_SIGHT = 192;
+
+// Spider (fast, low health)
+export const MONSTER_SPIDER_SPEED_PATROL = 1.2;
+export const MONSTER_SPIDER_SPEED_CHASE = 2.0;
+export const MONSTER_SPIDER_LIVES = 2;
+export const MONSTER_SPIDER_SIZE = 28;
+export const MONSTER_SPIDER_SIGHT = 160;
+
+// Golem (slow, high health, melee)
+export const MONSTER_GOLEM_SPEED_PATROL = 0.4;
+export const MONSTER_GOLEM_SPEED_CHASE = 0.7;
+export const MONSTER_GOLEM_LIVES = 8;
+export const MONSTER_GOLEM_SIZE = 48;
+export const MONSTER_GOLEM_SIGHT = 128;
+export const MONSTER_GOLEM_ATTACK_DAMAGE = 2; // Does 2 damage instead of 1
+
+// Ghost (teleports, medium stats)
+export const MONSTER_GHOST_SPEED_PATROL = 0.5;
+export const MONSTER_GHOST_SPEED_CHASE = 1.0;
+export const MONSTER_GHOST_LIVES = 4;
+export const MONSTER_GHOST_SIZE = 32;
+export const MONSTER_GHOST_SIGHT = 224;
+export const MONSTER_GHOST_TELEPORT_INTERVAL = 5000; // Teleport every 5 seconds
+export const MONSTER_GHOST_TELEPORT_RANGE = 200; // Max teleport distance
+
+// Boss (rare, powerful)
+export const MONSTER_BOSS_SPEED_PATROL = 0.6;
+export const MONSTER_BOSS_SPEED_CHASE = 1.0;
+export const MONSTER_BOSS_LIVES = 15;
+export const MONSTER_BOSS_SIZE = 64;
+export const MONSTER_BOSS_SIGHT = 256;
+export const MONSTER_BOSS_ATTACK_DAMAGE = 2;
+export const MONSTER_BOSS_SPAWN_MINIONS = true; // Can spawn smaller monsters
+
+// Monster Waves
+export const MONSTER_WAVES_ENABLED = true;
+export const MONSTER_WAVE_INTERVAL = 20000; // New wave every 20 seconds
+export const MONSTER_WAVE_INCREMENT = 2; // Add 2 more monsters per wave
+export const MONSTER_WAVE_MAX_MONSTERS = 15; // Maximum monsters at once
+
+// Monster Loot
+export const MONSTER_LOOT_ENABLED = true;
+export const MONSTER_LOOT_DROP_CHANCE = 0.4; // 40% chance to drop loot
+export const MONSTER_BOSS_LOOT_DROP_CHANCE = 1.0; // Bosses always drop loot
+
 // Props (rectangle)
 export const FLASKS_COUNT = 3;
 export const FLASK_SIZE = 24;
@@ -67,6 +121,33 @@ export const TRAPS_COUNT = 5;
 export const TRAP_SIZE = 24;
 export const TRAP_DAMAGE = 1;
 export const TRAP_COOLDOWN = 2000; // 2 seconds
+
+// Environmental Hazards
+export const HAZARDS_ENABLED = true;
+export const HAZARD_TYPES = ['lava', 'spikes', 'poison'] as const;
+
+// Lava pools (continuous damage while standing in them)
+export const HAZARD_LAVA_COUNT = 3;
+export const HAZARD_LAVA_SIZE = 48;
+export const HAZARD_LAVA_DAMAGE = 1;
+export const HAZARD_LAVA_TICK_RATE = 1000; // Damage every 1 second
+
+// Spike traps (instant damage when stepped on)
+export const HAZARD_SPIKES_COUNT = 5;
+export const HAZARD_SPIKES_SIZE = 32;
+export const HAZARD_SPIKES_DAMAGE = 1;
+export const HAZARD_SPIKES_COOLDOWN = 3000; // 3 seconds before can damage again
+
+// Poison zones (damage over time + slow effect)
+export const HAZARD_POISON_COUNT = 4;
+export const HAZARD_POISON_SIZE = 64;
+export const HAZARD_POISON_DAMAGE = 1;
+export const HAZARD_POISON_TICK_RATE = 1500; // Damage every 1.5 seconds
+export const HAZARD_POISON_SLOW_MULTIPLIER = 0.7; // 30% slower movement
+
+// Map Themes
+export const MAP_THEMES = ['default', 'forest', 'desert', 'dungeon', 'ice'] as const;
+export const MAP_THEME_DEFAULT = 'default';
 
 // Bullet (circle)
 export const BULLET_SIZE = 8;

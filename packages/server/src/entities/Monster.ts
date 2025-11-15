@@ -1,4 +1,4 @@
-import { Constants, Maths } from '@tosios/common';
+import { Constants, Maths, Models } from '@tosios/common';
 import { MapSchema, type } from '@colyseus/schema';
 import { Circle } from './Circle';
 import { Player } from '.';
@@ -9,12 +9,26 @@ export class Monster extends Circle {
     @type('number')
     private rotation: number = 0;
 
+    // Monster type and stats
+    @type('string')
+    public monsterType: Models.MonsterType;
+
+    private speedPatrol: number;
+
+    private speedChase: number;
+
+    private sight: number;
+
+    public attackDamage: number = 1;
+
     // Hidden properties
     private mapWidth: number;
 
     private mapHeight: number;
 
     private lives: number = 0;
+
+    private maxLives: number = 0;
 
     private state: MonsterState = 'idle';
 
@@ -28,13 +42,65 @@ export class Monster extends Circle {
 
     private targetPlayerId: string = null;
 
+    // Ghost-specific properties
+    private lastTeleportAt: number = Date.now();
+
     // Init
-    constructor(x: number, y: number, radius: number, mapWidth: number, mapHeight: number, lives: number) {
+    constructor(
+        x: number,
+        y: number,
+        radius: number,
+        mapWidth: number,
+        mapHeight: number,
+        lives: number,
+        monsterType: Models.MonsterType = 'bat',
+    ) {
         super(x, y, radius);
 
         this.mapWidth = mapWidth;
         this.mapHeight = mapHeight;
+        this.monsterType = monsterType;
         this.lives = lives;
+        this.maxLives = lives;
+
+        // Set stats based on monster type
+        this.setStatsFromType(monsterType);
+    }
+
+    private setStatsFromType(type: Models.MonsterType) {
+        switch (type) {
+            case 'spider':
+                this.speedPatrol = Constants.MONSTER_SPIDER_SPEED_PATROL;
+                this.speedChase = Constants.MONSTER_SPIDER_SPEED_CHASE;
+                this.sight = Constants.MONSTER_SPIDER_SIGHT;
+                this.attackDamage = 1;
+                break;
+            case 'golem':
+                this.speedPatrol = Constants.MONSTER_GOLEM_SPEED_PATROL;
+                this.speedChase = Constants.MONSTER_GOLEM_SPEED_CHASE;
+                this.sight = Constants.MONSTER_GOLEM_SIGHT;
+                this.attackDamage = Constants.MONSTER_GOLEM_ATTACK_DAMAGE;
+                break;
+            case 'ghost':
+                this.speedPatrol = Constants.MONSTER_GHOST_SPEED_PATROL;
+                this.speedChase = Constants.MONSTER_GHOST_SPEED_CHASE;
+                this.sight = Constants.MONSTER_GHOST_SIGHT;
+                this.attackDamage = 1;
+                break;
+            case 'boss':
+                this.speedPatrol = Constants.MONSTER_BOSS_SPEED_PATROL;
+                this.speedChase = Constants.MONSTER_BOSS_SPEED_CHASE;
+                this.sight = Constants.MONSTER_BOSS_SIGHT;
+                this.attackDamage = Constants.MONSTER_BOSS_ATTACK_DAMAGE;
+                break;
+            case 'bat':
+            default:
+                this.speedPatrol = Constants.MONSTER_BAT_SPEED_PATROL;
+                this.speedChase = Constants.MONSTER_BAT_SPEED_CHASE;
+                this.sight = Constants.MONSTER_BAT_SIGHT;
+                this.attackDamage = 1;
+                break;
+        }
     }
 
     // Update
@@ -80,8 +146,8 @@ export class Monster extends Circle {
             return;
         }
 
-        // Move monster
-        this.move(Constants.MONSTER_SPEED_PATROL, this.rotation);
+        // Move monster (use instance-specific speed)
+        this.move(this.speedPatrol, this.rotation);
 
         // Is the monster out of bounds?
         if (
@@ -106,14 +172,35 @@ export class Monster extends Circle {
 
         // Did player run away?
         const distance = Maths.getDistance(this.x, this.y, player.x, player.y);
-        if (distance > Constants.MONSTER_SIGHT) {
+        if (distance > this.sight) {
             this.startIdle();
             return;
         }
 
-        // Move toward player
+        // Ghost teleportation ability
+        if (this.monsterType === 'ghost') {
+            const timeSinceTeleport = Date.now() - this.lastTeleportAt;
+            if (timeSinceTeleport > Constants.MONSTER_GHOST_TELEPORT_INTERVAL) {
+                // Teleport closer to player (within range)
+                const teleportDistance = Math.min(
+                    distance * 0.6,
+                    Constants.MONSTER_GHOST_TELEPORT_RANGE,
+                );
+                const angle = Maths.calculateAngle(player.x, player.y, this.x, this.y);
+                this.x += Math.cos(angle) * teleportDistance;
+                this.y += Math.sin(angle) * teleportDistance;
+
+                // Clamp to map bounds
+                this.x = Maths.clamp(this.x, Constants.TILE_SIZE, this.mapWidth - Constants.TILE_SIZE);
+                this.y = Maths.clamp(this.y, Constants.TILE_SIZE, this.mapHeight - Constants.TILE_SIZE);
+
+                this.lastTeleportAt = Date.now();
+            }
+        }
+
+        // Move toward player (use instance-specific speed)
         this.rotation = Maths.calculateAngle(player.x, player.y, this.x, this.y);
-        this.move(Constants.MONSTER_SPEED_CHASE, this.rotation);
+        this.move(this.speedChase, this.rotation);
     }
 
     // States
@@ -148,7 +235,7 @@ export class Monster extends Circle {
     // Methods
     lookForPlayer(players: MapSchema<Player>): boolean {
         if (!this.targetPlayerId) {
-            const playerId = getClosestPlayerId(this.x, this.y, players);
+            const playerId = getClosestPlayerId(this.x, this.y, players, this.sight);
             if (playerId) {
                 this.startChase(playerId);
                 return true;
@@ -186,13 +273,18 @@ function getPlayerFromId(id: string, players: MapSchema<Player>): Player | null 
     return players.get(id);
 }
 
-function getClosestPlayerId(x: number, y: number, players: MapSchema<Player>): string | null {
+function getClosestPlayerId(
+    x: number,
+    y: number,
+    players: MapSchema<Player>,
+    sight: number,
+): string | null {
     let selectedPlayerId = null;
 
     players.forEach((player, playerId) => {
         if (player.isAlive) {
             const distance = Maths.getDistance(x, y, player.x, player.y);
-            if (distance <= Constants.MONSTER_SIGHT) {
+            if (distance <= sight) {
                 selectedPlayerId = playerId;
             }
         }

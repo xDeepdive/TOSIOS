@@ -4,6 +4,7 @@ export * from './Audio';
 export * from './Bullet';
 export * from './Chat';
 export * from './GameMode';
+export * from './Hazard';
 export * from './Leaderboard';
 export * from './Message';
 export * from './Monster';

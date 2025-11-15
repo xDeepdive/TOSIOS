@@ -203,6 +203,10 @@ export class Player extends Circle {
 
         this.score += 100 + streakBonus;
         this.addXP(50 + streakBonus); // XP with streak bonus
+
+        console.log(
+            `[${this.name}] Kill registered! Kills: ${this.kills}, Streak: ${this.killStreak}, Score: ${this.score}, Level: ${this.level}, XP: ${this.xp}`,
+        );
     }
 
     recordShot(hit: boolean) {
@@ -262,12 +266,17 @@ export class Player extends Circle {
     }
 
     setLives(lives: number) {
-        if (lives) {
-            this.lives = lives;
-            this.kills = 0;
-        } else {
-            this.lives = 0;
-        }
+        this.lives = lives;
+    }
+
+    resetMatchStats() {
+        // Reset match-specific stats at the start of each new match
+        this.kills = 0;
+        // Note: score, level, xp, deaths, highestKillStreak persist across matches
+        // killStreak resets on death, not on match start
+        console.log(
+            `[${this.name}] Match stats reset. Persistent stats - Score: ${this.score}, Level: ${this.level}, XP: ${this.xp}`,
+        );
     }
 
     setName(name: string) {

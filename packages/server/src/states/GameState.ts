@@ -137,6 +137,13 @@ export class GameState extends Schema {
 
         this.setPlayersPositionRandomly();
         this.setPlayersActive(true);
+
+        // Reset match-specific stats (kills only)
+        // Score, level, XP, deaths persist across matches
+        this.players.forEach((player) => {
+            player.resetMatchStats();
+        });
+
         this.propsAdd(Constants.FLASKS_COUNT);
         this.powerupsAdd(Constants.POWERUPS_COUNT); // Add powerups!
         this.monstersAdd(Constants.MONSTERS_COUNT);

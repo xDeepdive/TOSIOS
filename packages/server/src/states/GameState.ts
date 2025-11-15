@@ -36,6 +36,11 @@ export class GameState extends Schema {
 
     private lastWaveTime: number = 0;
 
+    // Kill Feed system
+    private killFeed: Models.KillFeedEntry[] = [];
+
+    private killFeedCounter: number = 0;
+
     private onMessage: (message: Models.MessageJSON) => void;
 
     //
@@ -584,15 +589,20 @@ export class GameState extends Schema {
                     boss: 'the BOSS',
                 };
 
+                const monsterName = monsterNames[monster.monsterType] || 'a monster';
+
                 this.onMessage({
                     type: 'killed',
                     from: 'server',
                     ts: Date.now(),
                     params: {
-                        killerName: monsterNames[monster.monsterType] || 'a monster',
+                        killerName: monsterName,
                         killedName: player.name,
                     },
                 });
+
+                // Add to kill feed
+                this.addKillFeedEntry(monsterName, player.name, monster.monsterType);
             }
         });
     };
@@ -639,16 +649,20 @@ export class GameState extends Schema {
             player.hurt();
 
             if (!player.isAlive) {
+                const killer = this.players.get(bullet.playerId);
                 this.onMessage({
                     type: 'killed',
                     from: 'server',
                     ts: Date.now(),
                     params: {
-                        killerName: this.players[bullet.playerId].name,
+                        killerName: killer.name,
                         killedName: player.name,
                     },
                 });
                 this.playerUpdateKills(bullet.playerId);
+
+                // Add to kill feed
+                this.addKillFeedEntry(killer.name, player.name, 'pistol');
             }
         });
 
@@ -893,5 +907,33 @@ export class GameState extends Schema {
 
     private getRandomTeam(): Types.Teams {
         return Math.random() < 0.5 ? 'blue' : 'red';
+    }
+
+    //
+    // Kill Feed
+    //
+    private addKillFeedEntry(killerName: string, killedName: string, weapon?: string) {
+        const entry: Models.KillFeedEntry = {
+            id: `kill_${this.killFeedCounter++}`,
+            killerName,
+            killedName,
+            weapon,
+            timestamp: Date.now(),
+        };
+
+        this.killFeed.unshift(entry);
+
+        // Keep only last N entries
+        if (this.killFeed.length > Constants.KILL_FEED_MAX_ENTRIES) {
+            this.killFeed.pop();
+        }
+
+        // Broadcast kill feed update
+        this.onMessage({
+            type: 'killfeed',
+            from: 'server',
+            ts: Date.now(),
+            params: { entry },
+        });
     }
 }

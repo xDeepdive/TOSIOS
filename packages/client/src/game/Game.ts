@@ -6,7 +6,7 @@ import { GUITextures } from './assets/images';
 import { SpriteSheets } from './assets/images/maps';
 import { ImpactConfig, ImpactTexture } from './assets/particles';
 import { Monster, Player, Prop } from './entities';
-import { BulletsManager, MonstersManager, PlayersManager, PropsManager } from './managers';
+import { BulletsManager, MonstersManager, PlayersManager, PropsManager, SoundManager } from './managers';
 import { distanceBetween } from './utils/distance';
 import { Inputs } from './utils/inputs';
 import { getSpritesLayer, getTexturesSet } from './utils/tiled';
@@ -78,6 +78,8 @@ export class Game {
 
     private bulletsManager: BulletsManager;
 
+    private soundManager: SoundManager;
+
     // Collisions
     private walls: Collisions.TreeCollider;
 
@@ -101,6 +103,12 @@ export class Game {
 
     // Server reconciliation
     private moveActions: Models.ActionJSON[] = [];
+
+    // Screen shake
+    private shakeStartTime: number = 0;
+    private shakeIntensity: number = 0;
+    private baseViewportX: number = 0;
+    private baseViewportY: number = 0;
 
     // LIFECYCLE
     constructor(screenWidth: number, screenHeight: number, onActionSend: any) {
@@ -157,6 +165,9 @@ export class Game {
         this.bulletsManager.zIndex = ZINDEXES.BULLETS;
         this.viewport.addChild(this.bulletsManager);
 
+        // Sound Manager
+        this.soundManager = new SoundManager();
+
         // Viewport
         this.viewport.zoomPercent(utils.isMobile.any ? 0.25 : 1.0);
         this.viewport.sortableChildren = true;
@@ -177,6 +188,7 @@ export class Game {
         this.updatePlayers();
         this.updateMonsters();
         this.updateBullets();
+        this.updateScreenShake();
 
         this.playersManager.sortChildren();
     };
@@ -260,6 +272,7 @@ export class Game {
                 bullet.kill(distanceBetween(this.me?.body, bullet.body));
                 player.hurt();
                 this.spawnImpact(bullet.x, bullet.y);
+                this.soundManager.playHit();
                 continue;
             }
 
@@ -273,6 +286,8 @@ export class Game {
                 bullet.kill(distanceBetween(this.me?.body, bullet.body));
                 this.me.hurt();
                 this.spawnImpact(bullet.x, bullet.y);
+                this.soundManager.playHit();
+                this.shake(); // Trigger screen shake on damage
                 continue;
             }
 
@@ -432,6 +447,9 @@ export class Game {
 
         this.me.lastShootAt = Date.now();
 
+        // Play shoot sound
+        this.soundManager.playShoot();
+
         this.bulletsManager.addOrCreate(
             {
                 x: bulletX,
@@ -471,6 +489,41 @@ export class Game {
                 y,
             },
         }).playOnceAndDestroy();
+    };
+
+    // SCREEN SHAKE
+    private shake(intensity: number = Constants.SCREEN_SHAKE_INTENSITY) {
+        this.shakeStartTime = Date.now();
+        this.shakeIntensity = intensity;
+        this.baseViewportX = this.viewport.x;
+        this.baseViewportY = this.viewport.y;
+    }
+
+    private updateScreenShake = () => {
+        if (this.shakeStartTime === 0) {
+            return;
+        }
+
+        const elapsed = Date.now() - this.shakeStartTime;
+
+        if (elapsed > Constants.SCREEN_SHAKE_DURATION) {
+            // Shake ended - reset to base position
+            this.shakeStartTime = 0;
+            this.viewport.x = this.baseViewportX;
+            this.viewport.y = this.baseViewportY;
+            return;
+        }
+
+        // Apply shake with decay
+        const progress = elapsed / Constants.SCREEN_SHAKE_DURATION;
+        const currentIntensity = this.shakeIntensity * (1 - progress);
+
+        // Random offset
+        const offsetX = (Math.random() - 0.5) * currentIntensity * 2;
+        const offsetY = (Math.random() - 0.5) * currentIntensity * 2;
+
+        this.viewport.x = this.baseViewportX + offsetX;
+        this.viewport.y = this.baseViewportY + offsetY;
     };
 
     // SETTERS

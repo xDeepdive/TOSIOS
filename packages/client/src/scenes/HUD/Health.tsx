@@ -67,6 +67,17 @@ export const Health = React.memo((props: HealthProps): React.ReactElement => {
         if (isInvisible) activePowerups.push('👻 Invisible');
         if (hasDoubleDamage) activePowerups.push('💥 2x Dmg');
 
+        // Calculate health percentage
+        const healthPercent = (lives / maxLives) * 100;
+
+        // Health bar color based on percentage
+        let healthBarColor = '#00FF00'; // Green
+        if (healthPercent <= 33) {
+            healthBarColor = '#FF0000'; // Red
+        } else if (healthPercent <= 66) {
+            healthBarColor = '#FFA500'; // Orange
+        }
+
         return (
             <Container
                 style={{
@@ -75,6 +86,18 @@ export const Health = React.memo((props: HealthProps): React.ReactElement => {
                 }}
             >
                 <Text style={styles.nameText}>{name}</Text>
+                <Space size="xxs" />
+
+                {/* Health Bar */}
+                <View style={styles.healthBarContainer}>
+                    <View style={{
+                        ...styles.healthBarFill,
+                        width: `${healthPercent}%`,
+                        backgroundColor: healthBarColor,
+                    }} />
+                    <Text style={styles.healthBarText}>{lives} / {maxLives}</Text>
+                </View>
+
                 <Space size="xxs" />
                 <View style={styles.hearts}>{hearts}</View>
                 <Space size="xxs" />
@@ -85,7 +108,7 @@ export const Health = React.memo((props: HealthProps): React.ReactElement => {
                     <>
                         <Space size="xxs" />
                         <View style={styles.powerupsContainer}>
-                            <Text style={styles.powerupText}>{activePowerups.join(' ')}</Text>
+                            <Text style={styles.powerupText}>{activePowerups.join(' | ')}</Text>
                         </View>
                     </>
                 )}
@@ -102,6 +125,33 @@ const styles: { [key: string]: CSSProperties } = {
     nameText: {
         color: 'white',
         fontSize: isMobile ? 14 : 16,
+    },
+    healthBarContainer: {
+        position: 'relative',
+        width: isMobile ? 120 : 200,
+        height: isMobile ? 16 : 24,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        border: '2px solid rgba(255, 255, 255, 0.3)',
+        borderRadius: 4,
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    healthBarFill: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        height: '100%',
+        transition: 'width 0.3s ease, background-color 0.3s ease',
+    },
+    healthBarText: {
+        position: 'relative',
+        color: 'white',
+        fontSize: isMobile ? 10 : 12,
+        fontWeight: 'bold',
+        zIndex: 1,
+        textShadow: '0 0 2px black',
     },
     hearts: {
         display: 'flex',
@@ -121,6 +171,7 @@ const styles: { [key: string]: CSSProperties } = {
         backgroundColor: 'rgba(0, 255, 0, 0.2)',
         padding: 4,
         borderRadius: 4,
+        border: '1px solid rgba(0, 255, 0, 0.4)',
     },
     powerupText: {
         color: '#00FF00',

@@ -184,8 +184,8 @@ export const WEAPON_ROCKET_EXPLOSION_RADIUS = 64;
 
 // Bots
 export const BOTS_ENABLED = true; // Enable/disable bot system
-export const BOTS_MIN_PLAYERS = 10; // Auto-spawn bots if less than this many players - increased for full sessions
-export const BOTS_MAX_COUNT = 10; // Maximum number of bots - ensure full lobbies
+export const BOTS_MIN_PLAYERS = 16; // Auto-spawn bots if less than this many players - ensure full 16-player sessions
+export const BOTS_MAX_COUNT = 15; // Maximum number of bots (16 total with 1 real player minimum)
 export const BOTS_DIFFICULTY = 'medium'; // easy, medium, hard
 export const BOTS_UPDATE_INTERVAL = 16; // How often bots think (ms) - 60 FPS for smooth movement
 export const BOTS_SHOOT_DISTANCE = 300; // Distance at which bots start shooting - increased range
@@ -197,3 +197,10 @@ export const BOTS_HARD_AIM_ERROR = 0.05; // Radians of aim error (hard) - very a
 export const BOTS_EASY_REACTION_TIME = 50; // ms delay before actions - instant
 export const BOTS_MEDIUM_REACTION_TIME = 30; // very fast
 export const BOTS_HARD_REACTION_TIME = 16; // instant reactions
+
+// UI Features
+export const KILL_FEED_MAX_ENTRIES = 5; // Maximum kill feed notifications to show
+export const KILL_FEED_DURATION = 5000; // How long kill feed entries stay visible (ms)
+export const SCREEN_SHAKE_DURATION = 200; // Screen shake duration on damage (ms)
+export const SCREEN_SHAKE_INTENSITY = 5; // Screen shake intensity (pixels)
+export const HUD_UPDATE_INTERVAL = 100; // HUD update frequency (ms)

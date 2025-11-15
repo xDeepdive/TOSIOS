@@ -5,3 +5,4 @@ import PlayersManager from './PlayersManager';
 import PropsManager from './PropsManager';
 
 export { BaseManager, BulletsManager, MonstersManager, PlayersManager, PropsManager };
+export * from './SoundManager';

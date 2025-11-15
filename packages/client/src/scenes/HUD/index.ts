@@ -8,3 +8,4 @@ export * from './Menu';
 export * from './Messages';
 export * from './Players';
 export * from './Time';
+export * from './VictoryScreen';

@@ -1,4 +1,4 @@
-import { Health, Leaderboard, Menu, Messages, Players, Time } from './';
+import { Health, Leaderboard, Menu, Messages, Players, Time, VictoryScreen } from './';
 import { Keys, Models } from '@tosios/common';
 import React, { CSSProperties } from 'react';
 import { Announce } from './Announce';
@@ -70,10 +70,39 @@ export const HUD = React.memo(
         } = props;
         const [leaderboardOpened, setLeaderboardOpened] = React.useState(false);
         const [menuOpened, setMenuOpened] = React.useState(false);
+        const [victoryScreenData, setVictoryScreenData] = React.useState<{
+            winnerName?: string;
+            isTimeout: boolean;
+        } | null>(null);
 
         const handleLeave = () => {
             window.location.href = window.location.origin;
         };
+
+        // Check for game end messages (won/timeout)
+        React.useEffect(() => {
+            if (!messages || messages.length === 0) {
+                return;
+            }
+
+            // Check the latest message for game end
+            const latestMessage = messages[messages.length - 1];
+
+            if (latestMessage.type === 'won') {
+                setVictoryScreenData({
+                    winnerName: latestMessage.params.name,
+                    isTimeout: false,
+                });
+            } else if (latestMessage.type === 'timeout') {
+                setVictoryScreenData({
+                    winnerName: undefined,
+                    isTimeout: true,
+                });
+            } else if (latestMessage.type === 'start') {
+                // Reset victory screen when new game starts
+                setVictoryScreenData(null);
+            }
+        }, [messages]);
 
         const handleKeyDown = (event: any) => {
             const key = event.code;
@@ -161,6 +190,17 @@ export const HUD = React.memo(
 
                 {/* Menu */}
                 {menuOpened ? <Menu onClose={() => setMenuOpened(false)} onLeave={handleLeave} /> : null}
+
+                {/* Victory/Defeat Screen */}
+                {victoryScreenData ? (
+                    <VictoryScreen
+                        winnerName={victoryScreenData.winnerName}
+                        isTimeout={victoryScreenData.isTimeout}
+                        players={players}
+                        playerId={playerId}
+                        onClose={() => setVictoryScreenData(null)}
+                    />
+                ) : null}
             </View>
         );
     },

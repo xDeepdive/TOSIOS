@@ -258,21 +258,28 @@ export class BotAI {
             }
         });
 
+        // Check if bot should retreat (low health)
+        const shouldRetreat = this.bot.lives <= 1;
+
         // Shoot at threats occasionally (not every frame, so bot can also move)
         const shootInterval = Constants.BULLET_RATE; // Same as bullet rate
         if (
             closestThreat &&
             threatDistance < Constants.BOTS_SHOOT_DISTANCE &&
-            currentTime - this.lastShootTime > shootInterval
+            currentTime - this.lastShootTime > shootInterval &&
+            !shouldRetreat // Don't shoot when retreating, just run!
         ) {
             this.lastShootTime = currentTime;
             return this.getShootAction(closestThreat, currentTime);
         }
 
         // ALWAYS move (primary action)
-        // Priority: Move towards threat > Move towards target > Wander
-        if (closestThreat) {
-            // Move towards closest threat (player or monster)
+        // Priority: Retreat when low health > Move to health > Move towards threat > Wander
+        if (shouldRetreat && closestThreat) {
+            // RETREAT - run AWAY from threat
+            return this.getRetreatAction(closestThreat, walls, currentTime);
+        } else if (closestThreat) {
+            // Move towards closest threat (player or monster) when healthy
             return this.getMoveTowardTargetAction(closestThreat, walls, currentTime);
         } else if (this.currentTarget) {
             // Move towards target (powerup/health)
@@ -299,6 +306,73 @@ export class BotAI {
                 angle: aimWithError,
             },
             ts: currentTime,
+            playerId: this.bot.playerId,
+        };
+    }
+
+    /**
+     * Retreat AWAY from a threat (run away when low health)
+     */
+    private getRetreatAction(
+        threat: BotTarget,
+        walls: Collisions.TreeCollider,
+        currentTime?: number,
+    ): Models.ActionJSON | null {
+        // Calculate direction AWAY from threat (opposite direction)
+        const dirX = this.bot.x - threat.x; // Reversed!
+        const dirY = this.bot.y - threat.y; // Reversed!
+
+        // Normalize direction
+        const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
+        if (magnitude === 0) {
+            // If somehow on same position, pick random direction
+            return this.getWanderAction(walls, currentTime || Date.now());
+        }
+
+        let normalizedX = dirX / magnitude;
+        let normalizedY = dirY / magnitude;
+        let rotation = Math.atan2(dirY, dirX);
+
+        // Check if this movement would collide with a wall
+        const futureX = this.bot.x + normalizedX * Constants.PLAYER_SPEED * 3;
+        const futureY = this.bot.y + normalizedY * Constants.PLAYER_SPEED * 3;
+        const futureBody = new Geometry.CircleBody(futureX, futureY, this.bot.radius);
+
+        if (walls.collidesWithCircle(futureBody, 'full')) {
+            // Try perpendicular directions
+            const perpAngle1 = rotation + Math.PI / 2;
+            const perpAngle2 = rotation - Math.PI / 2;
+
+            const testX1 = this.bot.x + Math.cos(perpAngle1) * Constants.PLAYER_SPEED * 3;
+            const testY1 = this.bot.y + Math.sin(perpAngle1) * Constants.PLAYER_SPEED * 3;
+            const testX2 = this.bot.x + Math.cos(perpAngle2) * Constants.PLAYER_SPEED * 3;
+            const testY2 = this.bot.y + Math.sin(perpAngle2) * Constants.PLAYER_SPEED * 3;
+
+            const testBody1 = new Geometry.CircleBody(testX1, testY1, this.bot.radius);
+            const testBody2 = new Geometry.CircleBody(testX2, testY2, this.bot.radius);
+
+            if (!walls.collidesWithCircle(testBody1, 'full')) {
+                normalizedX = Math.cos(perpAngle1);
+                normalizedY = Math.sin(perpAngle1);
+                rotation = perpAngle1;
+            } else if (!walls.collidesWithCircle(testBody2, 'full')) {
+                normalizedX = Math.cos(perpAngle2);
+                normalizedY = Math.sin(perpAngle2);
+                rotation = perpAngle2;
+            } else {
+                // Cornered - try to wander away
+                return this.getWanderAction(walls, currentTime || Date.now());
+            }
+        }
+
+        return {
+            type: 'move',
+            value: {
+                x: normalizedX,
+                y: normalizedY,
+                rotation,
+            },
+            ts: currentTime || Date.now(),
             playerId: this.bot.playerId,
         };
     }

@@ -33,7 +33,7 @@ export const PLAYER_WEAPON_SIZE = 12; // The bigger, the further away a bullet w
 export const PLAYER_HEARING_DISTANCE = 256;
 
 // Monster
-export const MONSTERS_COUNT = 3;
+export const MONSTERS_COUNT = 1; // Start with just 1 monster
 export const MONSTER_SIZE = 32;
 export const MONSTER_SPEED_PATROL = 0.75;
 export const MONSTER_SPEED_CHASE = 1.25;
@@ -90,9 +90,9 @@ export const MONSTER_BOSS_SPAWN_MINIONS = true; // Can spawn smaller monsters
 
 // Monster Waves
 export const MONSTER_WAVES_ENABLED = true;
-export const MONSTER_WAVE_INTERVAL = 20000; // New wave every 20 seconds
-export const MONSTER_WAVE_INCREMENT = 2; // Add 2 more monsters per wave
-export const MONSTER_WAVE_MAX_MONSTERS = 15; // Maximum monsters at once
+export const MONSTER_WAVE_INTERVAL = 30000; // New wave every 30 seconds (reduced frequency)
+export const MONSTER_WAVE_INCREMENT = 1; // Add 1 monster per wave (reduced from 2)
+export const MONSTER_WAVE_MAX_MONSTERS = 5; // Maximum 5 monsters at once (reduced from 15)
 
 // Monster Loot
 export const MONSTER_LOOT_ENABLED = true;

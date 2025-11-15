@@ -663,6 +663,9 @@ export class GameState extends Schema {
             monster.hurt();
 
             if (!monster.isAlive) {
+                // Award kill to player who killed the monster
+                this.playerUpdateKills(bullet.playerId);
+
                 // Monster loot drops
                 if (Constants.MONSTER_LOOT_ENABLED) {
                     const dropChance =

@@ -184,8 +184,8 @@ export const WEAPON_ROCKET_EXPLOSION_RADIUS = 64;
 
 // Bots
 export const BOTS_ENABLED = true; // Enable/disable bot system
-export const BOTS_MIN_PLAYERS = 4; // Auto-spawn bots if less than this many players
-export const BOTS_MAX_COUNT = 8; // Maximum number of bots
+export const BOTS_MIN_PLAYERS = 10; // Auto-spawn bots if less than this many players - increased for full sessions
+export const BOTS_MAX_COUNT = 10; // Maximum number of bots - ensure full lobbies
 export const BOTS_DIFFICULTY = 'medium'; // easy, medium, hard
 export const BOTS_UPDATE_INTERVAL = 50; // How often bots think (ms) - faster updates
 export const BOTS_SHOOT_DISTANCE = 300; // Distance at which bots start shooting - increased range

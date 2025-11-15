@@ -26,6 +26,11 @@ export class BotAI {
     private wanderDirection: { x: number; y: number; angle: number } | null = null;
     private wanderChangeTime: number = 0;
 
+    // Unstuck mechanism
+    private lastPosition: { x: number; y: number } = { x: 0, y: 0 };
+    private stuckCounter: number = 0;
+    private stuckCheckTime: number = 0;
+
     constructor(bot: Player, difficulty: BotDifficulty = 'medium') {
         this.bot = bot;
         this.difficulty = difficulty;
@@ -66,6 +71,25 @@ export class BotAI {
 
         if (!this.bot.isAlive) {
             return null;
+        }
+
+        // Check if bot is stuck (hasn't moved in 1 second)
+        if (currentTime - this.stuckCheckTime > 1000) {
+            const distanceMoved = Math.sqrt(
+                Math.pow(this.bot.x - this.lastPosition.x, 2) + Math.pow(this.bot.y - this.lastPosition.y, 2),
+            );
+
+            if (distanceMoved < 5) {
+                // Bot barely moved - likely stuck
+                this.stuckCounter++;
+                // Force new wander direction
+                this.wanderDirection = null;
+            } else {
+                this.stuckCounter = 0;
+            }
+
+            this.lastPosition = { x: this.bot.x, y: this.bot.y };
+            this.stuckCheckTime = currentTime;
         }
 
         // Evaluate targets
@@ -296,11 +320,41 @@ export class BotAI {
             return null;
         }
 
-        const normalizedX = dirX / magnitude;
-        const normalizedY = dirY / magnitude;
+        let normalizedX = dirX / magnitude;
+        let normalizedY = dirY / magnitude;
+        let rotation = Math.atan2(dirY, dirX);
 
-        // Calculate rotation
-        const rotation = Math.atan2(dirY, dirX);
+        // Check if this movement would collide with a wall
+        const futureX = this.bot.x + normalizedX * Constants.PLAYER_SPEED * 3;
+        const futureY = this.bot.y + normalizedY * Constants.PLAYER_SPEED * 3;
+        const futureBody = new Geometry.CircleBody(futureX, futureY, this.bot.radius);
+
+        if (walls.collidesWithCircle(futureBody, 'full')) {
+            // Try perpendicular directions to navigate around obstacle
+            const perpAngle1 = rotation + Math.PI / 2;
+            const perpAngle2 = rotation - Math.PI / 2;
+
+            const testX1 = this.bot.x + Math.cos(perpAngle1) * Constants.PLAYER_SPEED * 3;
+            const testY1 = this.bot.y + Math.sin(perpAngle1) * Constants.PLAYER_SPEED * 3;
+            const testX2 = this.bot.x + Math.cos(perpAngle2) * Constants.PLAYER_SPEED * 3;
+            const testY2 = this.bot.y + Math.sin(perpAngle2) * Constants.PLAYER_SPEED * 3;
+
+            const testBody1 = new Geometry.CircleBody(testX1, testY1, this.bot.radius);
+            const testBody2 = new Geometry.CircleBody(testX2, testY2, this.bot.radius);
+
+            if (!walls.collidesWithCircle(testBody1, 'full')) {
+                normalizedX = Math.cos(perpAngle1);
+                normalizedY = Math.sin(perpAngle1);
+                rotation = perpAngle1;
+            } else if (!walls.collidesWithCircle(testBody2, 'full')) {
+                normalizedX = Math.cos(perpAngle2);
+                normalizedY = Math.sin(perpAngle2);
+                rotation = perpAngle2;
+            } else {
+                // Both perpendiculars blocked - switch to wander
+                return this.getWanderAction(walls, currentTime || Date.now());
+            }
+        }
 
         return {
             type: 'move',
@@ -319,11 +373,29 @@ export class BotAI {
      */
     private getWanderAction(walls: Collisions.TreeCollider, currentTime: number): Models.ActionJSON | null {
         // Change direction more frequently for varied movement (300-600ms)
-        const wanderDuration = 300 + Math.random() * 300;
+        // Change even faster if stuck
+        const baseDuration = this.stuckCounter > 2 ? 100 : 300;
+        const wanderDuration = baseDuration + Math.random() * 300;
 
         if (!this.wanderDirection || currentTime - this.wanderChangeTime > wanderDuration) {
-            // Pick a new random direction
-            const angle = Math.random() * Math.PI * 2;
+            // Try to find a clear direction
+            let foundClearPath = false;
+            let attempts = 0;
+            let angle = 0;
+
+            while (!foundClearPath && attempts < 8) {
+                angle = Math.random() * Math.PI * 2;
+                const testX = this.bot.x + Math.cos(angle) * Constants.PLAYER_SPEED * 5;
+                const testY = this.bot.y + Math.sin(angle) * Constants.PLAYER_SPEED * 5;
+                const testBody = new Geometry.CircleBody(testX, testY, this.bot.radius);
+
+                if (!walls.collidesWithCircle(testBody, 'full')) {
+                    foundClearPath = true;
+                } else {
+                    attempts++;
+                }
+            }
+
             this.wanderDirection = {
                 x: Math.cos(angle),
                 y: Math.sin(angle),
@@ -335,6 +407,17 @@ export class BotAI {
         // Add slight random variation to direction each frame for more natural movement
         const dirVariation = (Math.random() - 0.5) * 0.2; // Small angle variation
         const variedAngle = this.wanderDirection.angle + dirVariation;
+
+        // Final check - make sure we're not walking into a wall
+        const futureX = this.bot.x + Math.cos(variedAngle) * Constants.PLAYER_SPEED * 3;
+        const futureY = this.bot.y + Math.sin(variedAngle) * Constants.PLAYER_SPEED * 3;
+        const futureBody = new Geometry.CircleBody(futureX, futureY, this.bot.radius);
+
+        if (walls.collidesWithCircle(futureBody, 'full')) {
+            // Force new direction
+            this.wanderDirection = null;
+            return null;
+        }
 
         return {
             type: 'move',

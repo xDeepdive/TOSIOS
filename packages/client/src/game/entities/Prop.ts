@@ -15,8 +15,6 @@ export class Prop extends BaseEntity {
 
     private _shadow: Graphics;
 
-    private _glow: Graphics | null = null;
-
     // Init
     constructor(prop: Models.PropJSON) {
         super({
@@ -26,36 +24,6 @@ export class Prop extends BaseEntity {
             textures: getTexture(prop.type),
             zIndex: ZINDEXES.PROP,
         });
-
-        // For powerups, add a colored circle graphic instead of sprite
-        if (prop.type !== 'potion-red') {
-            this.sprite.visible = false; // Hide the default sprite
-
-            // Create powerup visual
-            const powerupGraphic = new Graphics();
-            const color = getPowerupColor(prop.type);
-            const size = prop.radius;
-
-            // Draw colored circle
-            powerupGraphic.beginFill(color, 0.9);
-            powerupGraphic.drawCircle(0, 0, size);
-            powerupGraphic.endFill();
-
-            // Add white border
-            powerupGraphic.lineStyle(3, 0xFFFFFF, 1);
-            powerupGraphic.drawCircle(0, 0, size);
-
-            powerupGraphic.zIndex = ZINDEXES.PROP;
-            this.container.addChild(powerupGraphic);
-
-            // Add glow effect
-            this._glow = new Graphics();
-            this._glow.beginFill(color, 0.2);
-            this._glow.drawCircle(0, 0, size * 1.5);
-            this._glow.endFill();
-            this._glow.zIndex = 0;
-            this.container.addChild(this._glow);
-        }
 
         // Shadow
         this._shadow = new Graphics();
@@ -115,28 +83,17 @@ const getTexture = (type: Models.PropType): Texture[] => {
     switch (type) {
         case 'potion-red':
             return PropTextures.potionRedTextures;
-        // Powerups will use graphics instead of textures
-        default:
-            return PropTextures.potionRedTextures; // Dummy return
-    }
-};
-
-/**
- * Return a color for each powerup type
- */
-const getPowerupColor = (type: Models.PropType): number => {
-    switch (type) {
         case 'speed-boost':
-            return 0x00FFFF; // Cyan
+            return PropTextures.speedBoostTextures;
         case 'shield':
-            return 0x4169E1; // Royal Blue
+            return PropTextures.shieldTextures;
         case 'rapid-fire':
-            return 0xFF6600; // Orange
+            return PropTextures.rapidFireTextures;
         case 'invisibility':
-            return 0xC0C0C0; // Silver/Gray
+            return PropTextures.invisibilityTextures;
         case 'double-damage':
-            return 0xFF1493; // Deep Pink
+            return PropTextures.doubleDamageTextures;
         default:
-            return 0xFFFFFF; // White
+            return PropTextures.potionRedTextures;
     }
 };

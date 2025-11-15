@@ -100,3 +100,19 @@ export const WEAPON_ROCKET_DAMAGE = 2;
 export const WEAPON_ROCKET_SPEED = 2;
 export const WEAPON_ROCKET_SIZE = 12;
 export const WEAPON_ROCKET_EXPLOSION_RADIUS = 64;
+
+// Bots
+export const BOTS_ENABLED = true; // Enable/disable bot system
+export const BOTS_MIN_PLAYERS = 4; // Auto-spawn bots if less than this many players
+export const BOTS_MAX_COUNT = 8; // Maximum number of bots
+export const BOTS_DIFFICULTY = 'medium'; // easy, medium, hard
+export const BOTS_UPDATE_INTERVAL = 100; // How often bots think (ms)
+export const BOTS_SHOOT_DISTANCE = 200; // Distance at which bots start shooting
+export const BOTS_RETREAT_HEALTH = 1; // Health level at which bots retreat
+export const BOTS_POWERUP_DETECTION_RANGE = 150; // Range for detecting powerups
+export const BOTS_EASY_AIM_ERROR = 0.5; // Radians of aim error (easy)
+export const BOTS_MEDIUM_AIM_ERROR = 0.3; // Radians of aim error (medium)
+export const BOTS_HARD_AIM_ERROR = 0.1; // Radians of aim error (hard)
+export const BOTS_EASY_REACTION_TIME = 800; // ms delay before actions
+export const BOTS_MEDIUM_REACTION_TIME = 400;
+export const BOTS_HARD_REACTION_TIME = 150;

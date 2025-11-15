@@ -1,6 +1,7 @@
 import { ArraySchema, MapSchema, Schema, type } from '@colyseus/schema';
 import { Bullet, Game, Monster, Player, Prop } from '../entities';
 import { Collisions, Constants, Entities, Geometry, Maps, Maths, Models, Tiled, Types } from '@tosios/common';
+import { BotAI } from '../ai/BotAI';
 
 export class GameState extends Schema {
     @type(Game)
@@ -25,6 +26,10 @@ export class GameState extends Schema {
     private spawners: Geometry.RectangleBody[] = [];
 
     private actions: Models.ActionJSON[] = [];
+
+    private botAIs: Map<string, BotAI> = new Map(); // Bot AI controllers
+
+    private botCounter: number = 0; // Counter for bot IDs
 
     private onMessage: (message: Models.MessageJSON) => void;
 
@@ -64,6 +69,7 @@ export class GameState extends Schema {
     //
     update() {
         this.updateGame();
+        this.updateBots(); // Update bot AI
         this.updatePlayers();
         this.updateMonsters();
         this.updateBullets();
@@ -131,6 +137,11 @@ export class GameState extends Schema {
     };
 
     private handleGameStart = () => {
+        // Auto-fill with bots if needed
+        if (Constants.BOTS_ENABLED) {
+            this.manageBotsAutoFill();
+        }
+
         if (this.game.mode === 'team deathmatch') {
             this.setPlayersTeamsRandomly();
         }
@@ -607,5 +618,141 @@ export class GameState extends Schema {
 
             this.props.push(powerup);
         }
+    }
+
+    //
+    // Bots
+    //
+    private updateBots() {
+        if (!Constants.BOTS_ENABLED) {
+            return;
+        }
+
+        const currentTime = Date.now();
+
+        // Update each bot AI
+        this.botAIs.forEach((botAI, botId) => {
+            const action = botAI.update(currentTime, this.players, Array.from(this.props), this.walls);
+
+            if (action) {
+                // Add bot action to action queue
+                this.actions.push(action);
+            }
+        });
+
+        // Check if we need to spawn or remove bots (auto-fill)
+        this.manageBotsAutoFill();
+    }
+
+    private manageBotsAutoFill() {
+        // Count real players (non-bots)
+        let realPlayerCount = 0;
+        let botCount = 0;
+
+        this.players.forEach((player) => {
+            if (this.botAIs.has(player.playerId)) {
+                botCount++;
+            } else {
+                realPlayerCount++;
+            }
+        });
+
+        const totalPlayers = realPlayerCount + botCount;
+
+        // Add bots if below minimum
+        if (totalPlayers < Constants.BOTS_MIN_PLAYERS && botCount < Constants.BOTS_MAX_COUNT) {
+            const botsToAdd = Math.min(
+                Constants.BOTS_MIN_PLAYERS - totalPlayers,
+                Constants.BOTS_MAX_COUNT - botCount,
+            );
+
+            for (let i = 0; i < botsToAdd; i++) {
+                this.botAdd();
+            }
+        }
+
+        // Remove bots if we have real players joining
+        if (realPlayerCount > 0 && totalPlayers > Constants.BOTS_MIN_PLAYERS && botCount > 0) {
+            // Remove one bot to make room
+            const botToRemove = Array.from(this.botAIs.keys())[0];
+            if (botToRemove) {
+                this.botRemove(botToRemove);
+            }
+        }
+    }
+
+    private botAdd() {
+        const botId = `bot_${this.botCounter++}`;
+        const botName = BotAI.getBotName(
+            this.botCounter,
+            Constants.BOTS_DIFFICULTY as 'easy' | 'medium' | 'hard',
+        );
+
+        // Get random spawn position
+        const spawner = this.getSpawnerRandomly();
+        const x = spawner.x + Constants.PLAYER_SIZE / 2;
+        const y = spawner.y + Constants.PLAYER_SIZE / 2;
+
+        // Create bot player
+        const bot = new Player(
+            botId,
+            x,
+            y,
+            Constants.PLAYER_SIZE / 2,
+            Constants.PLAYER_MAX_LIVES,
+            Constants.PLAYER_MAX_LIVES,
+            botName,
+            this.game.mode === 'team deathmatch' ? this.getRandomTeam() : undefined,
+        );
+
+        // Create bot AI controller
+        const botAI = new BotAI(bot, Constants.BOTS_DIFFICULTY as 'easy' | 'medium' | 'hard');
+
+        // Add to state
+        this.players.set(botId, bot);
+        this.botAIs.set(botId, botAI);
+
+        console.log(`[Bot] Added bot: ${botName} (${Constants.BOTS_DIFFICULTY})`);
+
+        this.onMessage({
+            type: 'joined',
+            from: 'server',
+            ts: Date.now(),
+            params: {
+                name: botName,
+            },
+        });
+    }
+
+    private botRemove(botId: string) {
+        const bot = this.players.get(botId);
+        if (!bot) {
+            return;
+        }
+
+        console.log(`[Bot] Removed bot: ${bot.name}`);
+
+        this.botAIs.delete(botId);
+        this.players.delete(botId);
+
+        this.onMessage({
+            type: 'left',
+            from: 'server',
+            ts: Date.now(),
+            params: {
+                name: bot.name,
+            },
+        });
+    }
+
+    private botsRemoveAll() {
+        const botIds = Array.from(this.botAIs.keys());
+        botIds.forEach((botId) => {
+            this.botRemove(botId);
+        });
+    }
+
+    private getRandomTeam(): Types.Teams {
+        return Math.random() < 0.5 ? 'blue' : 'red';
     }
 }

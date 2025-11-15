@@ -1,189 +1,301 @@
-# 🚀 TOSIOS Enhanced - Deployment Guide
+# 🚀 TOSIOS Deployment Guide
 
-## Netlify Deployment (Easiest for Frontend)
-
-### Quick Deploy
-
-1. **Fork or Push to GitHub**
-   - Make sure all code is pushed to your GitHub repository
-
-2. **Connect to Netlify**
-   - Go to [Netlify](https://www.netlify.com/)
-   - Click "New site from Git"
-   - Choose "GitHub" and authorize
-   - Select your TOSIOS repository
-   - Netlify will auto-detect the `netlify.toml` configuration
-
-3. **Deploy Settings** (Auto-configured via netlify.toml)
-   - Build command: `yarn install && yarn build`
-   - Publish directory: `packages/client/dist`
-   - Node version: 18
-
-4. **Deploy!**
-   - Click "Deploy site"
-   - Wait ~3-5 minutes for build
-   - Get your live URL: `https://your-site.netlify.app`
-
-### Environment Variables (Optional)
-
-If you need custom settings:
-- Go to Site Settings → Environment Variables
-- Add any needed variables
+Complete guide to deploying TOSIOS to production with Netlify (client) and Railway (server).
 
 ---
 
-## Heroku Deployment (For Full Stack with WebSocket)
+## 📋 Prerequisites
 
-Since TOSIOS needs a WebSocket server, you'll need a backend hosting solution:
-
-### Method 1: Heroku
-
-1. **Create Heroku App**
-   ```bash
-   heroku create tosios-multiplayer
-   ```
-
-2. **Add buildpacks**
-   ```bash
-   heroku buildpacks:set heroku/nodejs
-   ```
-
-3. **Create Procfile**
-   ```
-   web: node packages/server/dist/index.js
-   ```
-
-4. **Deploy**
-   ```bash
-   git push heroku main
-   ```
-
-5. **Set environment**
-   ```bash
-   heroku config:set NODE_ENV=production
-   ```
+- GitHub account
+- Netlify account ([netlify.com](https://netlify.com))
+- Railway account ([railway.app](https://railway.app)) OR Render account ([render.com](https://render.com))
 
 ---
 
-## Docker Deployment (Production-Ready)
+## 🎯 Deployment Strategy
 
-### Deploy with Docker
+TOSIOS requires **TWO separate deployments**:
 
-1. **Build Image**
-   ```bash
-   docker build -t tosios-game .
-   ```
-
-2. **Run Container**
-   ```bash
-   docker run -d -p 3001:3001 tosios-game
-   ```
-
-3. **Deploy to Cloud**
-   - AWS ECS
-   - Google Cloud Run
-   - DigitalOcean App Platform
+1. **Client (Frontend)** → Netlify (static hosting)
+2. **Server (Backend)** → Railway/Render (WebSocket server)
 
 ---
 
-## Vercel Deployment (Serverless)
+## 🖥️ Part 1: Deploy Server (Backend)
 
-1. **Install Vercel CLI**
+### Option A: Railway (Recommended)
+
+1. **Sign up** at [railway.app](https://railway.app) with GitHub
+
+2. **Create New Project**:
+   - Click "New Project"
+   - Select "Deploy from GitHub repo"
+   - Choose your TOSIOS repository
+
+3. **Configure Service**:
+   - **Name**: `tosios-server`
+   - **Root Directory**: Leave empty (Railway will detect)
+   - **Build Command**: (auto-detected)
+   - **Start Command**: `node packages/server/dist/index.js`
+
+4. **Set Environment Variables** (Railway Dashboard):
    ```bash
-   npm i -g vercel
+   NODE_ENV=production
+   PORT=3001
    ```
 
-2. **Deploy**
-   ```bash
-   vercel
+5. **Deploy** - Railway will provide a URL like:
+   ```
+   https://tosios-server-production.up.railway.app
    ```
 
-3. **Production**
+6. **Copy the URL** - Convert to WebSocket format:
+   ```
+   wss://tosios-server-production.up.railway.app
+   ```
+
+### Option B: Render
+
+1. Go to [render.com](https://render.com) → "New Web Service"
+
+2. **Connect GitHub** repo
+
+3. **Configure**:
+   - **Name**: `tosios-server`
+   - **Root Directory**: `packages/server`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `node dist/index.js`
+
+4. **Environment Variables**:
    ```bash
-   vercel --prod
+   NODE_ENV=production
+   PORT=3001
+   ```
+
+5. **Deploy** - Get URL and convert:
+   ```
+   wss://tosios-server.onrender.com
    ```
 
 ---
 
-## Railway Deployment (Easy Full Stack)
+## 🌐 Part 2: Deploy Client (Frontend)
 
-1. **Go to [Railway.app](https://railway.app/)**
-2. **Click "New Project"**
-3. **Select "Deploy from GitHub repo"**
-4. **Choose TOSIOS repository**
-5. **Railway auto-detects Node.js**
-6. **Get your URL!**
+### Method 1: Netlify Web UI (Easiest)
+
+1. **Build locally first**:
+   ```bash
+   cd /path/to/TOSIOS
+   npm run build
+   ```
+
+2. **Go to** [app.netlify.com](https://app.netlify.com)
+
+3. **Deploy**:
+   - Click "Add new site" → "Deploy manually"
+   - Drag and drop `packages/client/public` folder
+   - Wait for deployment
+
+4. **Configure Environment**:
+   - Go to "Site settings" → "Environment variables"
+   - Add variable:
+     ```
+     VITE_SERVER_URL = wss://your-server.railway.app
+     ```
+   - Replace with YOUR server URL from Part 1
+
+5. **Redeploy**:
+   - Go to "Deploys" → "Trigger deploy" → "Deploy site"
+
+### Method 2: Netlify CLI
+
+1. **Install Netlify CLI**:
+   ```bash
+   npm install -g netlify-cli
+   ```
+
+2. **Login**:
+   ```bash
+   netlify login
+   ```
+
+3. **Deploy** from project root:
+   ```bash
+   npm run build
+   netlify deploy --dir=packages/client/public --prod
+   ```
+
+4. **Set environment variable**:
+   ```bash
+   netlify env:set VITE_SERVER_URL "wss://your-server.railway.app"
+   ```
+
+5. **Redeploy** to apply environment:
+   ```bash
+   netlify deploy --dir=packages/client/public --prod
+   ```
+
+### Method 3: Netlify GitHub Integration (Auto-deploy)
+
+1. **Push to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Prepare for deployment"
+   git push origin main
+   ```
+
+2. **Connect to Netlify**:
+   - Go to Netlify → "Add new site" → "Import from Git"
+   - Select your GitHub repository
+   - Configure:
+     - **Base directory**: (leave empty)
+     - **Build command**: `npm run build`
+     - **Publish directory**: `packages/client/public`
+
+3. **Set Environment Variables** in Netlify dashboard:
+   ```
+   VITE_SERVER_URL = wss://your-server.railway.app
+   ```
+
+4. **Deploy** - Netlify will auto-deploy on every push!
 
 ---
 
-## Current Features in Deployed Game
+## ✅ Verification
 
-✅ **10-player support**
-✅ **Kill streak tracking** with bonuses (3/5/10 streaks)
-✅ **XP & Level system** (level up every 1000 XP)
-✅ **Score system** with streak bonuses
-✅ **Accuracy tracking** (shots fired vs hits)
-✅ **Powerups** (Speed Boost, Shield, Rapid Fire, Invisibility, Double Damage)
-✅ **Enhanced leaderboard** (Level, Score, Kills, Streak)
-✅ **Visual powerup indicators** on HUD
-✅ **Real-time stats display**
+### Test Server
 
----
+Visit your server URL in browser:
+```
+https://tosios-server-production.up.railway.app
+```
 
-## Testing After Deployment
+You should see: `{"success":true}` or similar
 
-1. **Open the deployed URL**
-2. **Create a room** with 10 max players
-3. **Share the link** with friends
-4. **Test features**:
-   - Kill tracking
-   - Powerups spawning
-   - Leaderboard updates
-   - Stats display
+### Test Client
 
----
+1. Visit your Netlify URL:
+   ```
+   https://your-site.netlify.app
+   ```
 
-## Troubleshooting
+2. **Create a game** - You should see:
+   - Player count: 16/16 (with bots)
+   - No connection errors in console
 
-### WebSocket Connection Issues
-- Make sure your host supports WebSockets
-- Check firewall settings
-- Verify port 3001 is open
+3. **Check console** (F12):
+   ```javascript
+   // Should show:
+   WebSocket connection to 'wss://tosios-server...' established
+   ```
 
-### Build Failures
-- Clear cache: `yarn clean`
-- Reinstall: `rm -rf node_modules && yarn install`
-- Check Node version: Should be v14+
+### Troubleshooting
 
-### Game Not Loading
-- Check browser console (F12)
-- Verify static files are served correctly
-- Check network tab for failed requests
+**"Can't connect to server"**:
+- ✅ Check `VITE_SERVER_URL` in Netlify env vars
+- ✅ Ensure URL starts with `wss://` (not `https://`)
+- ✅ Verify server is running (visit HTTPS URL in browser)
+- ✅ Check browser console for exact error
 
----
+**"WebSocket connection failed"**:
+- ✅ Railway/Render server must be running
+- ✅ Check server logs for errors
+- ✅ Ensure PORT is set correctly (usually 3001)
 
-## Recommended Hosting for Full Experience
-
-| Platform | Best For | Cost | WebSocket Support |
-|----------|----------|------|-------------------|
-| **Railway** | Full stack | Free tier | ✅ Yes |
-| **Heroku** | Full stack | Free tier (sleep) | ✅ Yes |
-| **DigitalOcean** | Production | $5/month | ✅ Yes |
-| **AWS EC2** | Enterprise | Variable | ✅ Yes |
-| **Netlify** | Frontend only | Free | ❌ Need separate backend |
+**"Build failed"**:
+- ✅ Run `npm run build` locally first
+- ✅ Check Node version (18+ required)
+- ✅ Clear build cache and retry
 
 ---
 
-## 🎮 Play Now!
+## 🔄 Updating Your Deployment
 
-Once deployed, your game will be accessible at your hosting URL 24/7!
+### Update Client
 
-**Features Working:**
-- Multiplayer (up to 16 players)
-- Kill streaks with rewards
-- XP progression
-- Powerup system
-- Enhanced stats
-- Real-time leaderboards
+```bash
+# Make changes, then:
+npm run build
+netlify deploy --dir=packages/client/public --prod
+```
 
-Enjoy your fully-featured multiplayer game! 🚀
+Or push to GitHub (auto-deploys if using GitHub integration)
+
+### Update Server
+
+**Railway**: Push to GitHub → Auto-deploys
+
+**Render**: Push to GitHub → Auto-deploys
+
+**Manual**: Redeploy from dashboard
+
+---
+
+## 💰 Cost Breakdown
+
+### Free Tier (Both Included!)
+
+- **Netlify**: 100GB bandwidth/month, 300 build minutes
+- **Railway**: $5 free credit/month (~500 hours)
+- **Render**: 750 hours/month free
+
+**Total Cost**: $0/month for low-traffic games! 🎉
+
+---
+
+## 🎮 Custom Domain (Optional)
+
+### Netlify (Client)
+
+1. Go to "Domain settings"
+2. Add custom domain (e.g., `play.yourgame.com`)
+3. Follow DNS instructions
+
+### Railway (Server)
+
+1. Go to Settings → Networking
+2. Add custom domain (e.g., `server.yourgame.com`)
+3. Update Netlify env: `VITE_SERVER_URL=wss://server.yourgame.com`
+
+---
+
+## 📊 Monitoring
+
+### Server Health
+
+**Railway**:
+- Dashboard → Metrics
+- View CPU, Memory, Network
+
+**Render**:
+- Dashboard → Metrics
+- View requests, response times
+
+### Client Analytics
+
+**Netlify**:
+- Analytics tab
+- View visitors, bandwidth
+
+---
+
+## 🔒 Security Checklist
+
+- ✅ HTTPS/WSS enabled (automatic with Netlify/Railway)
+- ✅ Environment variables set correctly
+- ✅ Server CORS configured (already done)
+- ✅ Rate limiting enabled (optional - add to server)
+
+---
+
+## 🎉 You're Live!
+
+Share your game:
+```
+https://your-site.netlify.app
+```
+
+Players can join directly - bots will fill empty slots automatically!
+
+Need help? Check server logs in Railway/Render dashboard.

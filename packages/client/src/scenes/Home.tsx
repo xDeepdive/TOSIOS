@@ -73,9 +73,19 @@ export default class Home extends Component<IProps, IState> {
     // BASE
     componentDidMount() {
         try {
-            const host = window.document.location.host.replace(/:.*/, '');
-            const port = process.env.NODE_ENV !== 'production' ? Constants.WS_PORT : window.location.port;
-            const url = `${window.location.protocol.replace('http', 'ws')}//${host}${port ? `:${port}` : ''}`;
+            // Support for separate server deployment (e.g., Railway/Render)
+            const serverUrl = process.env.VITE_SERVER_URL || process.env.REACT_APP_SERVER_URL;
+
+            let url: string;
+            if (serverUrl) {
+                // Use explicit server URL from environment variable
+                url = serverUrl;
+            } else {
+                // Fallback to same-domain deployment
+                const host = window.document.location.host.replace(/:.*/, '');
+                const port = process.env.NODE_ENV !== 'production' ? Constants.WS_PORT : window.location.port;
+                url = `${window.location.protocol.replace('http', 'ws')}//${host}${port ? `:${port}` : ''}`;
+            }
 
             this.client = new Client(url);
             this.setState(

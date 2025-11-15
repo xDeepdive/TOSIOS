@@ -10,9 +10,15 @@ const NAME_OFFSET = 4;
 const LIVES_OFFSET = 10;
 const HURT_COLOR = 0xff0000;
 const HEAL_COLOR = 0x00ff00;
+const SPEED_BOOST_COLOR = 0x00ffff; // Cyan
+const SHIELD_COLOR = 0x4169e1; // Royal Blue
+const RAPID_FIRE_COLOR = 0xff6600; // Orange
+const INVISIBILITY_COLOR = 0xc0c0c0; // Silver
+const DOUBLE_DAMAGE_COLOR = 0xff1493; // Deep Pink
 const BULLET_DELAY_FACTOR = 1.1; // Add 10% to delay as server may lag behind sometimes (rarely)
 const SMOKE_DELAY = 500;
 const DEAD_ALPHA = 0.2;
+const POWERUP_TEXT_OFFSET = 20;
 const ZINDEXES = {
     SHADOW: 0,
     WEAPON_BACK: 1,
@@ -39,6 +45,26 @@ export class Player extends BaseEntity {
     private _kills: number = 0;
 
     private _rotation: number = 0;
+
+    // Powerup states
+    private _hasSpeedBoost: boolean = false;
+
+    private _hasShield: boolean = false;
+
+    private _hasRapidFire: boolean = false;
+
+    private _isInvisible: boolean = false;
+
+    private _hasDoubleDamage: boolean = false;
+
+    // New stats
+    public level: number = 1;
+
+    public score: number = 0;
+
+    public killStreak: number = 0;
+
+    public xp: number = 0;
 
     // Computed
     private _isGhost: boolean = false;
@@ -148,6 +174,55 @@ export class Player extends BaseEntity {
 
     heal() {
         Effects.flash(this.sprite, HEAL_COLOR, utils.string2hex(this.color));
+    }
+
+    speedBoostEffect() {
+        Effects.flash(this.sprite, SPEED_BOOST_COLOR, utils.string2hex(this.color));
+        this.showPowerupText('⚡ SPEED BOOST!', SPEED_BOOST_COLOR);
+    }
+
+    shieldEffect() {
+        Effects.flash(this.sprite, SHIELD_COLOR, utils.string2hex(this.color));
+        this.showPowerupText('🛡️ SHIELD!', SHIELD_COLOR);
+    }
+
+    rapidFireEffect() {
+        Effects.flash(this.sprite, RAPID_FIRE_COLOR, utils.string2hex(this.color));
+        this.showPowerupText('🔥 RAPID FIRE!', RAPID_FIRE_COLOR);
+    }
+
+    invisibilityEffect() {
+        Effects.flash(this.sprite, INVISIBILITY_COLOR, utils.string2hex(this.color));
+        this.showPowerupText('👻 INVISIBLE!', INVISIBILITY_COLOR);
+    }
+
+    doubleDamageEffect() {
+        Effects.flash(this.sprite, DOUBLE_DAMAGE_COLOR, utils.string2hex(this.color));
+        this.showPowerupText('💥 DOUBLE DAMAGE!', DOUBLE_DAMAGE_COLOR);
+    }
+
+    showPowerupText(text: string, color: number) {
+        // Create a text sprite that floats up and fades out
+        const textSprite = new TextSprite(text, 10, 0.5, 1);
+        textSprite.position.set(this.body.radius, -POWERUP_TEXT_OFFSET);
+        textSprite.zIndex = ZINDEXES.INFOS + 1;
+        textSprite.tint = color;
+        this.container.addChild(textSprite);
+
+        // Animate the text upward and fade out
+        let opacity = 1;
+        let offsetY = 0;
+        const animationInterval = setInterval(() => {
+            offsetY += 2;
+            opacity -= 0.05;
+            textSprite.position.y = -POWERUP_TEXT_OFFSET - offsetY;
+            textSprite.alpha = opacity;
+
+            if (opacity <= 0) {
+                clearInterval(animationInterval);
+                this.container.removeChild(textSprite);
+            }
+        }, 50);
     }
 
     updateTextures() {
@@ -347,6 +422,41 @@ export class Player extends BaseEntity {
         this._lastShootAt = lastShootAt;
     }
 
+    set hasSpeedBoost(hasSpeedBoost: boolean) {
+        if (!this._hasSpeedBoost && hasSpeedBoost) {
+            this.speedBoostEffect();
+        }
+        this._hasSpeedBoost = hasSpeedBoost;
+    }
+
+    set hasShield(hasShield: boolean) {
+        if (!this._hasShield && hasShield) {
+            this.shieldEffect();
+        }
+        this._hasShield = hasShield;
+    }
+
+    set hasRapidFire(hasRapidFire: boolean) {
+        if (!this._hasRapidFire && hasRapidFire) {
+            this.rapidFireEffect();
+        }
+        this._hasRapidFire = hasRapidFire;
+    }
+
+    set isInvisible(isInvisible: boolean) {
+        if (!this._isInvisible && isInvisible) {
+            this.invisibilityEffect();
+        }
+        this._isInvisible = isInvisible;
+    }
+
+    set hasDoubleDamage(hasDoubleDamage: boolean) {
+        if (!this._hasDoubleDamage && hasDoubleDamage) {
+            this.doubleDamageEffect();
+        }
+        this._hasDoubleDamage = hasDoubleDamage;
+    }
+
     // Getters
     get x(): number {
         return this.body.x;
@@ -402,6 +512,26 @@ export class Player extends BaseEntity {
 
     get isAlive() {
         return this._lives > 0;
+    }
+
+    get hasSpeedBoost() {
+        return this._hasSpeedBoost;
+    }
+
+    get hasShield() {
+        return this._hasShield;
+    }
+
+    get hasRapidFire() {
+        return this._hasRapidFire;
+    }
+
+    get isInvisible() {
+        return this._isInvisible;
+    }
+
+    get hasDoubleDamage() {
+        return this._hasDoubleDamage;
     }
 }
 

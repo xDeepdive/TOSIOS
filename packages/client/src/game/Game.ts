@@ -592,6 +592,19 @@ export class Game {
             this.me.kills = attributes.kills;
             this.me.team = attributes.team;
 
+            // Update stats
+            if (attributes.level !== undefined) this.me.level = attributes.level;
+            if (attributes.score !== undefined) this.me.score = attributes.score;
+            if (attributes.killStreak !== undefined) this.me.killStreak = attributes.killStreak;
+            if (attributes.xp !== undefined) this.me.xp = attributes.xp;
+
+            // Update powerups
+            if (attributes.hasSpeedBoost !== undefined) this.me.hasSpeedBoost = attributes.hasSpeedBoost;
+            if (attributes.hasShield !== undefined) this.me.hasShield = attributes.hasShield;
+            if (attributes.hasRapidFire !== undefined) this.me.hasRapidFire = attributes.hasRapidFire;
+            if (attributes.isInvisible !== undefined) this.me.isInvisible = attributes.isInvisible;
+            if (attributes.hasDoubleDamage !== undefined) this.me.hasDoubleDamage = attributes.hasDoubleDamage;
+
             if (attributes.ack !== this.me.ack) {
                 this.me.ack = attributes.ack;
 
@@ -640,6 +653,19 @@ export class Game {
             player.color = attributes.color;
             player.kills = attributes.kills;
             player.team = attributes.team;
+
+            // Update stats
+            if (attributes.level !== undefined) player.level = attributes.level;
+            if (attributes.score !== undefined) player.score = attributes.score;
+            if (attributes.killStreak !== undefined) player.killStreak = attributes.killStreak;
+            if (attributes.xp !== undefined) player.xp = attributes.xp;
+
+            // Update powerups
+            if (attributes.hasSpeedBoost !== undefined) player.hasSpeedBoost = attributes.hasSpeedBoost;
+            if (attributes.hasShield !== undefined) player.hasShield = attributes.hasShield;
+            if (attributes.hasRapidFire !== undefined) player.hasRapidFire = attributes.hasRapidFire;
+            if (attributes.isInvisible !== undefined) player.isInvisible = attributes.isInvisible;
+            if (attributes.hasDoubleDamage !== undefined) player.hasDoubleDamage = attributes.hasDoubleDamage;
 
             // Update rotation
             player.rotation = attributes.rotation;

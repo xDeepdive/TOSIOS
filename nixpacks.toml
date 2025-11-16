@@ -1,0 +1,14 @@
+# Nixpacks configuration for Railway
+# This tells Railway how to build the monorepo
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "node packages/server/dist/index.js"

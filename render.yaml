@@ -2,13 +2,15 @@ services:
   - type: web
     name: tosios-server
     env: node
+    runtime: node
     region: oregon
     plan: free
+    # Build from root directory (monorepo)
     buildCommand: npm install && npm run build
     startCommand: node packages/server/dist/index.js
     healthCheckPath: /
+    # Auto-deploy on push
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000

@@ -6,15 +6,15 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy all package files first (for better caching)
 COPY package*.json ./
 COPY packages/common/package*.json ./packages/common/
 COPY packages/server/package*.json ./packages/server/
 
-# Install dependencies
-RUN npm install
+# Install ALL dependencies including devDependencies (needed for build)
+RUN npm install --include=dev
 
-# Copy source code
+# Copy all source code and build scripts
 COPY . .
 
 # Build the project (creates packages/server/dist/index.js)
@@ -25,11 +25,15 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy built files and dependencies
+# Copy package files
+COPY package*.json ./
+
+# Copy built server files
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
-COPY --from=builder /app/packages/server/package.json ./packages/server/
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
+COPY --from=builder /app/packages/common ./packages/common
+
+# Install ONLY production dependencies
+RUN npm install --omit=dev
 
 # Set environment to production
 ENV NODE_ENV=production

@@ -1,44 +1,39 @@
-# TOSIOS Production Dockerfile (client + server on Railway)
-# Uses npm workspaces, no Netlify needed
-
-# ---------- Build stage ----------
+# ---------- BUILD STAGE ----------
 FROM node:18-bullseye-slim AS builder
-
-# Optional: ensure timezone / locale stuff is sane if needed
-ENV NODE_ENV=development
 
 WORKDIR /app
 
-# Copy root manifests
+# Copy root and workspace package manifests so npm workspaces can resolve deps
 COPY package*.json ./
-
-# Copy ALL workspace package.json files so npm workspaces see them
 COPY packages/common/package*.json ./packages/common/
 COPY packages/server/package*.json ./packages/server/
 COPY packages/client/package*.json ./packages/client/
 
-# Install all dependencies for all workspaces (client + server + common)
+# Install ALL deps (including dev + all workspaces)
 RUN npm install --include=dev
 
-# Now copy the full source
+# Copy the rest of the source
 COPY . .
 
-# Build the project (this runs ts-node ./scripts/build.ts)
-# which builds both client and server
+# Build client + server in PRODUCTION mode
 ENV BUILD_MODE=production
 RUN npm run build
+# (This runs ts-node ./scripts/build.ts which builds client + server)
 
-# ---------- Runtime stage ----------
+# ---------- RUNTIME STAGE ----------
 FROM node:18-bullseye-slim
 
 WORKDIR /app
-ENV NODE_ENV=production
 
-# Copy everything built (code + node_modules + dist)
+# Copy everything from builder (dist, public, node_modules, etc.)
 COPY --from=builder /app ./
 
-# TOSIOS server listens on 3001 by default
+# Production env
+ENV NODE_ENV=production
+
+# TOSIOS server listens on 3001, so we tell Railway that too
+ENV PORT=3001
 EXPOSE 3001
 
-# Start the server (serves API + client)
+# Start the colyseus / express server
 CMD ["node", "packages/server/dist/index.js"]

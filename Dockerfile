@@ -1,45 +1,43 @@
-# TOSIOS Server Dockerfile for Production Deployment
-# Works with Railway, Render, Fly.io, and other Docker platforms
+# ============================================
+# TOSIOS Production Dockerfile (Railway-ready)
+# Works with npm + Yarn-style workspaces
+# ============================================
 
 FROM node:18-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy all package files first (for better caching)
+# Copy root package.json & lockfile
 COPY package*.json ./
+
+# Copy ALL workspace package.json files
 COPY packages/common/package*.json ./packages/common/
 COPY packages/server/package*.json ./packages/server/
+COPY packages/client/package*.json ./packages/client/
 
-# Install ALL dependencies including devDependencies (needed for build)
+# Install all dependencies (root + all workspaces)
 RUN npm install --include=dev
 
-# Copy all source code and build scripts
+# Copy full source AFTER installing dependencies
 COPY . .
 
-# Build the project (creates packages/server/dist/index.js)
+# Build the project (creates server dist + client bundle)
+ENV BUILD_MODE=production
 RUN npm run build
 
-# Production stage
+
+# ===========================
+# Runtime image
+# ===========================
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Bring built app + node_modules from builder stage
+COPY --from=builder /app ./
 
-# Copy built server files
-COPY --from=builder /app/packages/server/dist ./packages/server/dist
-COPY --from=builder /app/packages/common ./packages/common
-
-# Install ONLY production dependencies
-RUN npm install --omit=dev
-
-# Set environment to production
 ENV NODE_ENV=production
 
-# Expose port (configurable via PORT env var)
 EXPOSE 3001
 
-# Start server
 CMD ["node", "packages/server/dist/index.js"]

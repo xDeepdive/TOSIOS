@@ -1,25 +1,40 @@
-FROM node:14.18.2-alpine
+# ---------- BUILD STAGE ----------
+FROM node:18-bullseye-slim AS builder
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
 ARG REACT_APP_GA_TRACKING_ID
 
-# Dependencies
-COPY ./package.json .
-COPY ./yarn.lock .
-COPY ./packages/client/package.json ./packages/client/
-COPY ./packages/common/package.json ./packages/common/
-COPY ./packages/server/package.json ./packages/server/
-RUN yarn
+# Copy root and workspace package manifests so npm workspaces can resolve deps
+COPY package*.json ./
+COPY packages/common/package*.json ./packages/common/
+COPY packages/server/package*.json ./packages/server/
+COPY packages/client/package*.json ./packages/client/
 
-# Files
+# Install ALL deps (including dev + all workspaces)
+RUN npm install --include=dev
+
+# Copy the rest of the source
 COPY . .
 
-# Build
-RUN BUILD_MODE=production yarn build
+# Build client + server in PRODUCTION mode
+ENV BUILD_MODE=production
+RUN npm run build
 
-# Port
+# ---------- RUNTIME STAGE ----------
+FROM node:18-bullseye-slim
+
+WORKDIR /app
+
+# Copy everything from builder (dist, public, node_modules, etc.)
+COPY --from=builder /app ./
+
+# Production env
+ENV NODE_ENV=production
+
+# TOSIOS server listens on 3001, so we tell Railway that too
+ENV PORT=3001
 EXPOSE 3001
 
-# Serve
-CMD [ "yarn", "serve" ]
+# Start the colyseus / express server
+CMD ["node", "packages/server/dist/index.js"]

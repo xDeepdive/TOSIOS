@@ -1,43 +1,38 @@
-# ============================================
-# TOSIOS Production Dockerfile (Railway-ready)
-# Works with npm + Yarn-style workspaces
-# ============================================
+# TOSIOS full app Dockerfile (server + client)
+# Works on Railway when you select "Use Dockerfile"
 
 FROM node:18-alpine AS builder
 
+# Install build tools (esbuild sometimes needs these)
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /app
 
-# Copy root package.json & lockfile
-COPY package*.json ./
+# Copy root manifests
+COPY package.json yarn.lock ./
 
-# Copy ALL workspace package.json files
-COPY packages/common/package*.json ./packages/common/
-COPY packages/server/package*.json ./packages/server/
-COPY packages/client/package*.json ./packages/client/
+# Copy monorepo packages and scripts
+COPY packages ./packages
+COPY scripts ./scripts
+COPY tsconfig.json ./tsconfig.json
 
-# Install all dependencies (root + all workspaces)
-RUN npm install --include=dev
+# Install all deps via Yarn workspaces (as the repo expects)
+RUN yarn install --frozen-lockfile
 
-# Copy full source AFTER installing dependencies
-COPY . .
+# Build client + server (ts-node ./scripts/build.ts)
+RUN yarn build
 
-# Build the project (creates server dist + client bundle)
-ENV BUILD_MODE=production
-RUN npm run build
-
-
-# ===========================
-# Runtime image
-# ===========================
+# ---------- Runtime image ----------
 FROM node:18-alpine
 
 WORKDIR /app
-
-# Bring built app + node_modules from builder stage
-COPY --from=builder /app ./
-
 ENV NODE_ENV=production
 
+# Copy everything built in the builder
+COPY --from=builder /app /app
+
+# Expose the port used by TOSIOS
 EXPOSE 3001
 
-CMD ["node", "packages/server/dist/index.js"]
+# Start the game server (also serves the client)
+CMD ["yarn", "serve"]

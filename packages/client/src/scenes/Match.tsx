@@ -100,15 +100,25 @@ export default class Match extends Component<IProps, IState> {
             }
 
             this.client = new Client(url);
+            console.log('[Match] Connecting to:', url);
+
             if (isNewRoom) {
+                console.log('[Match] Creating new room with options:', options);
                 this.room = await this.client.create(Constants.ROOM_NAME, options);
+                console.log('[Match] Room created:', this.room.id);
 
                 // We replace the "new" in the URL with the room's id
                 window.history.replaceState(null, '', `/${this.room.id}`);
             } else {
+                console.log('[Match] Joining room:', roomId);
                 this.room = await this.client.joinById(roomId, options);
+                console.log('[Match] Room joined:', this.room.id);
             }
         } catch (error) {
+            console.error('[Match] Failed to connect/create room:', error);
+            console.error('[Match] URL was:', url);
+            console.error('[Match] Options were:', options);
+            alert(`Failed to ${isNewRoom ? 'create' : 'join'} room: ${error instanceof Error ? error.message : String(error)}`);
             navigate('/');
             return;
         }

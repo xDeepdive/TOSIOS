@@ -1,30 +1,57 @@
-# --- Build & Runtime in one image (simple + works with Railway) ---
+# ============================================
+# Stage 1: Build
+# ============================================
+FROM node:18-alpine AS builder
 
-FROM node:18-bullseye-slim
-
-# Create app directory
 WORKDIR /app
 
-# Copy root package + lockfile
+# Copy package files
 COPY package.json yarn.lock ./
+COPY packages/client/package.json ./packages/client/
+COPY packages/server/package.json ./packages/server/
+COPY packages/common/package.json ./packages/common/
 
-# Copy monorepo packages + scripts + tsconfig
+# Install ALL dependencies (needed for build)
+RUN yarn install --frozen-lockfile --network-timeout 100000
+
+# Copy source code
 COPY packages ./packages
 COPY scripts ./scripts
-COPY tsconfig.json ./tsconfig.json
+COPY tsconfig.json ./
 
-# Install dependencies via Yarn (the repo uses workspaces)
-RUN yarn install --frozen-lockfile
-
-# Build client + server (runs scripts/build.ts)
+# Build the application
+ENV BUILD_MODE=production
 RUN yarn build
 
-# Production env
+# ============================================
+# Stage 2: Production Runtime
+# ============================================
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files for production install
+COPY package.json yarn.lock ./
+COPY packages/client/package.json ./packages/client/
+COPY packages/server/package.json ./packages/server/
+COPY packages/common/package.json ./packages/common/
+
+# Install ONLY production dependencies (much faster)
+RUN yarn install --frozen-lockfile --production --network-timeout 100000
+
+# Copy built files from builder
+COPY --from=builder /app/packages/client/public ./packages/client/public
+COPY --from=builder /app/packages/server/dist ./packages/server/dist
+COPY --from=builder /app/packages/common ./packages/common
+
+# Copy serve script
+COPY scripts/serve.sh ./scripts/serve.sh
+
+# Environment
 ENV NODE_ENV=production
 ENV PORT=3001
 
-# Expose port for Railway
 EXPOSE 3001
 
-# Start both: Express + Colyseus + static client
-CMD ["yarn", "serve"]
+# Start server (which serves both client + game)
+CMD ["node", "packages/server/dist/index.js"]

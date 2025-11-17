@@ -22,37 +22,39 @@ COPY tsconfig.json ./
 # Build the application
 ENV BUILD_MODE=production
 
-# Force cache bust - Railway won't cache this layer
-RUN date > /tmp/build-timestamp
+# Check what files exist BEFORE build
+RUN echo "========== BEFORE BUILD ==========" && \
+    echo "Client src exists:" && ls -la packages/client/src/ | head -5 && \
+    echo "Client public exists:" && ls -la packages/client/public/ && \
+    echo "=================================="
 
-RUN echo "========================================" && \
-    echo "Starting build at $(date)" && \
-    echo "BUILD_MODE: ${BUILD_MODE}" && \
-    cat /tmp/build-timestamp && \
-    echo "========================================" && \
-    yarn build 2>&1 && \
-    echo "========================================" && \
-    echo "Build completed! Verifying files..." && \
+# Force cache bust
+RUN date > /tmp/build-timestamp && cat /tmp/build-timestamp
+
+# Run build with full output
+RUN echo "========== STARTING BUILD ==========" && \
+    yarn build && \
+    echo "========== BUILD COMPLETE ==========" && \
     echo "" && \
-    echo "📁 Client public directory:" && \
+    echo "Client public after build:" && \
     ls -lah packages/client/public/ && \
     echo "" && \
-    echo "📁 Server dist directory:" && \
+    echo "Server dist after build:" && \
     ls -lah packages/server/dist/ && \
-    echo "========================================" && \
+    echo "====================================" && \
+    echo "" && \
     if [ ! -f packages/client/public/script.js ]; then \
-      echo "❌ ERROR: script.js not found!"; \
-      echo "This means esbuild failed to create the client bundle."; \
+      echo "❌ FATAL: script.js NOT FOUND"; \
+      echo "Client build failed!"; \
+      ls -R packages/client/; \
       exit 1; \
     fi && \
     if [ ! -f packages/server/dist/index.js ]; then \
-      echo "❌ ERROR: index.js not found!"; \
-      echo "This means esbuild failed to create the server bundle."; \
+      echo "❌ FATAL: index.js NOT FOUND"; \
       exit 1; \
     fi && \
-    echo "✅ Build verification passed - all files exist!" && \
-    echo "✅ script.js size: $(stat -c%s packages/client/public/script.js) bytes" && \
-    echo "✅ index.js size: $(stat -c%s packages/server/dist/index.js) bytes"
+    echo "✅ script.js: $(stat -c%s packages/client/public/script.js) bytes" && \
+    echo "✅ index.js: $(stat -c%s packages/server/dist/index.js) bytes"
 
 # ============================================
 # Stage 2: Production Runtime
@@ -86,14 +88,26 @@ ENV NODE_ENV=production
 
 EXPOSE 8080
 
-# Debug: List files before starting (helps diagnose issues)
-RUN echo "========================================" && \
-    echo "Checking runtime files..." && \
-    echo "Client files:" && \
-    ls -lh packages/client/public/ | head -20 && \
-    echo "Server files:" && \
-    ls -lh packages/server/dist/ | head -20 && \
-    echo "========================================"
+# Verify files in runtime stage
+RUN echo "========== RUNTIME STAGE CHECK ==========" && \
+    echo "📁 Client public directory:" && \
+    ls -lah packages/client/public/ && \
+    echo "" && \
+    echo "📁 Server dist directory:" && \
+    ls -lah packages/server/dist/ && \
+    echo "" && \
+    if [ ! -f packages/client/public/script.js ]; then \
+      echo "❌ ERROR: script.js missing in runtime stage!"; \
+      echo "Files that were copied:"; \
+      find packages/client/public/ -type f; \
+      exit 1; \
+    fi && \
+    if [ ! -f packages/client/public/index.html ]; then \
+      echo "❌ ERROR: index.html missing in runtime stage!"; \
+      exit 1; \
+    fi && \
+    echo "✅ All required files present in runtime stage" && \
+    echo "=========================================="
 
 # Start server (which serves both client + game)
 CMD ["node", "packages/server/dist/index.js"]

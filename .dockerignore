@@ -2,8 +2,10 @@
 node_modules
 packages/*/node_modules
 
-# Build output (client)
-packages/client/public
+# Build output (client) - only exclude generated files, not static assets
+packages/client/public/script.js
+packages/client/public/script.js.map
+packages/client/public/assets
 
 # Development
 .git

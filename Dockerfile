@@ -25,7 +25,8 @@ ENV BUILD_MODE=production
 # Check what files exist BEFORE build
 RUN echo "========== BEFORE BUILD ==========" && \
     echo "Client src exists:" && ls -la packages/client/src/ | head -5 && \
-    echo "Client public exists:" && ls -la packages/client/public/ && \
+    echo "" && \
+    echo "Client public directory:" && ls -lah packages/client/public/ && \
     echo "=================================="
 
 # Force cache bust

@@ -37,10 +37,18 @@ RUN echo "========== STARTING BUILD ==========" && \
     yarn build && \
     echo "========== BUILD COMPLETE ==========" && \
     echo "" && \
-    echo "Client public after build:" && \
+    echo "📁 Client public after build:" && \
     ls -lah packages/client/public/ && \
     echo "" && \
-    echo "Server dist after build:" && \
+    echo "📁 Assets directory (game images/sounds):" && \
+    if [ -d packages/client/public/assets ]; then \
+      ls -lah packages/client/public/assets/ | head -20; \
+      echo "Asset count: $(find packages/client/public/assets -type f | wc -l) files"; \
+    else \
+      echo "⚠️  WARNING: No assets directory! Images won't load!"; \
+    fi && \
+    echo "" && \
+    echo "📁 Server dist after build:" && \
     ls -lah packages/server/dist/ && \
     echo "====================================" && \
     echo "" && \

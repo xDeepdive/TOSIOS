@@ -83,24 +83,25 @@ export default class Match extends Component<IProps, IState> {
             };
         }
 
+        // Support for separate server deployment (e.g., Railway/Render)
+        const serverUrl = process.env.VITE_SERVER_URL || process.env.REACT_APP_SERVER_URL;
+
+        let url: string;
+        if (serverUrl) {
+            // Use explicit server URL from environment variable
+            url = serverUrl;
+        } else {
+            // Fallback to same-domain deployment
+            const host = window.document.location.host.replace(/:.*/, '');
+            const port = process.env.NODE_ENV !== 'production' ? Constants.WS_PORT : window.location.port;
+            url = `${window.location.protocol.replace('http', 'ws')}//${host}${port ? `:${port}` : ''}`;
+        }
+
+        console.log('[Match] Connecting to:', url);
+
         // Connect
         try {
-            // Support for separate server deployment (e.g., Railway/Render)
-            const serverUrl = process.env.VITE_SERVER_URL || process.env.REACT_APP_SERVER_URL;
-
-            let url: string;
-            if (serverUrl) {
-                // Use explicit server URL from environment variable
-                url = serverUrl;
-            } else {
-                // Fallback to same-domain deployment
-                const host = window.document.location.host.replace(/:.*/, '');
-                const port = process.env.NODE_ENV !== 'production' ? Constants.WS_PORT : window.location.port;
-                url = `${window.location.protocol.replace('http', 'ws')}//${host}${port ? `:${port}` : ''}`;
-            }
-
             this.client = new Client(url);
-            console.log('[Match] Connecting to:', url);
 
             if (isNewRoom) {
                 console.log('[Match] Creating new room with options:', options);

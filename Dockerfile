@@ -21,7 +21,12 @@ COPY tsconfig.json ./
 
 # Build the application
 ENV BUILD_MODE=production
-RUN yarn build
+# Force cache invalidation with timestamp
+ARG CACHEBUST=1
+RUN yarn build && \
+    echo "Build completed at $(date)" && \
+    ls -la packages/client/public/ && \
+    ls -la packages/server/dist/
 
 # ============================================
 # Stage 2: Production Runtime
@@ -56,10 +61,13 @@ ENV NODE_ENV=production
 EXPOSE 8080
 
 # Debug: List files before starting (helps diagnose issues)
-RUN echo "=== Checking built files ===" && \
-    ls -la packages/client/public/ && \
-    ls -la packages/server/dist/ && \
-    echo "=== Files check complete ==="
+RUN echo "========================================" && \
+    echo "Checking runtime files..." && \
+    echo "Client files:" && \
+    ls -lh packages/client/public/ | head -20 && \
+    echo "Server files:" && \
+    ls -lh packages/server/dist/ | head -20 && \
+    echo "========================================"
 
 # Start server (which serves both client + game)
 CMD ["node", "packages/server/dist/index.js"]

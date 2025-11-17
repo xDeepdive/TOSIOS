@@ -21,12 +21,38 @@ COPY tsconfig.json ./
 
 # Build the application
 ENV BUILD_MODE=production
-# Force cache invalidation with timestamp
-ARG CACHEBUST=1
-RUN yarn build && \
-    echo "Build completed at $(date)" && \
-    ls -la packages/client/public/ && \
-    ls -la packages/server/dist/
+
+# Force cache bust - Railway won't cache this layer
+RUN date > /tmp/build-timestamp
+
+RUN echo "========================================" && \
+    echo "Starting build at $(date)" && \
+    echo "BUILD_MODE: ${BUILD_MODE}" && \
+    cat /tmp/build-timestamp && \
+    echo "========================================" && \
+    yarn build 2>&1 && \
+    echo "========================================" && \
+    echo "Build completed! Verifying files..." && \
+    echo "" && \
+    echo "📁 Client public directory:" && \
+    ls -lah packages/client/public/ && \
+    echo "" && \
+    echo "📁 Server dist directory:" && \
+    ls -lah packages/server/dist/ && \
+    echo "========================================" && \
+    if [ ! -f packages/client/public/script.js ]; then \
+      echo "❌ ERROR: script.js not found!"; \
+      echo "This means esbuild failed to create the client bundle."; \
+      exit 1; \
+    fi && \
+    if [ ! -f packages/server/dist/index.js ]; then \
+      echo "❌ ERROR: index.js not found!"; \
+      echo "This means esbuild failed to create the server bundle."; \
+      exit 1; \
+    fi && \
+    echo "✅ Build verification passed - all files exist!" && \
+    echo "✅ script.js size: $(stat -c%s packages/client/public/script.js) bytes" && \
+    echo "✅ index.js size: $(stat -c%s packages/server/dist/index.js) bytes"
 
 # ============================================
 # Stage 2: Production Runtime

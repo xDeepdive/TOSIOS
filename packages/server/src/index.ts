@@ -9,7 +9,7 @@ import { join } from 'path';
 import { GameRoom } from './rooms/GameRoom';
 
 const PORT = Number(process.env.PORT || Constants.WS_PORT);
-const PUBLIC_DIR = join(__dirname, '../../client/public');
+const PUBLIC_DIR = process.env.PUBLIC_DIR || join(process.cwd(), 'packages/client/public');
 
 const app = express();
 app.use(cors());

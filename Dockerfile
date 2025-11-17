@@ -42,16 +42,24 @@ RUN yarn install --frozen-lockfile --production --network-timeout 100000
 # Copy built files from builder
 COPY --from=builder /app/packages/client/public ./packages/client/public
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
-COPY --from=builder /app/packages/common ./packages/common
+COPY --from=builder /app/packages/common/src ./packages/common/src
 
-# Copy serve script
+# Copy serve script (optional, not used in CMD)
 COPY scripts/serve.sh ./scripts/serve.sh
 
 # Environment
 ENV NODE_ENV=production
-ENV PORT=3001
 
-EXPOSE 3001
+# Don't set PORT here - let Railway set it
+# Railway will set PORT=8080 automatically
+
+EXPOSE 8080
+
+# Debug: List files before starting (helps diagnose issues)
+RUN echo "=== Checking built files ===" && \
+    ls -la packages/client/public/ && \
+    ls -la packages/server/dist/ && \
+    echo "=== Files check complete ==="
 
 # Start server (which serves both client + game)
 CMD ["node", "packages/server/dist/index.js"]

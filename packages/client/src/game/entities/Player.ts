@@ -152,6 +152,12 @@ export class Player extends BaseEntity {
         this.team = player.team;
         this.isGhost = isGhost;
 
+        // Initialize stats from server
+        if (player.level !== undefined) this.level = player.level;
+        if (player.score !== undefined) this.score = player.score;
+        if (player.killStreak !== undefined) this.killStreak = player.killStreak;
+        if (player.xp !== undefined) this.xp = player.xp;
+
         // Ghost
         if (isGhost) {
             this.visible = Constants.DEBUG;

@@ -5,10 +5,8 @@ WORKDIR /app
 
 ARG REACT_APP_GA_TRACKING_ID
 
-# Copy root package files
+# Copy root and workspace package manifests so npm workspaces can resolve deps
 COPY package*.json ./
-
-# Copy workspace package files (creating directory structure)
 COPY packages/common/package*.json ./packages/common/
 COPY packages/server/package*.json ./packages/server/
 COPY packages/client/package*.json ./packages/client/
@@ -16,16 +14,8 @@ COPY packages/client/package*.json ./packages/client/
 # Install ALL deps (including dev + all workspaces)
 RUN npm install --include=dev
 
-# Copy source files for all packages
-COPY packages/common ./packages/common
-COPY packages/server/src ./packages/server/src
-COPY packages/client/src ./packages/client/src
-COPY packages/client/public ./packages/client/public
-
-# Copy scripts and configs needed for build
-COPY scripts ./scripts
-COPY tsconfig*.json ./
-COPY .prettierrc* ./
+# Copy the rest of the source
+COPY . .
 
 # Build client + server in PRODUCTION mode
 ENV BUILD_MODE=production

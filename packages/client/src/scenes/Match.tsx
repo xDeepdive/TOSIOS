@@ -305,6 +305,9 @@ export default class Match extends Component<IProps, IState> {
             playerKillStreak: stats.playerKillStreak,
             playerXP: stats.playerXP,
             playersCount: stats.playersCount,
+            playersAlive: stats.playersAlive,
+            playersDead: stats.playersDead,
+            totalPlayers: stats.players.length,
         });
 
         this.setState((prev) => ({

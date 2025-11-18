@@ -14,7 +14,7 @@ interface VictoryScreenProps {
 
 /**
  * Display victory/defeat screen with match stats
- * Desktop-optimized layout with two-column design
+ * Minimal, compact design for clear visibility
  */
 export const VictoryScreen = React.memo((props: VictoryScreenProps): React.ReactElement | null => {
     const { winnerName, isTimeout, players, playerId, onClose } = props;
@@ -32,152 +32,105 @@ export const VictoryScreen = React.memo((props: VictoryScreenProps): React.React
         const scoreA = a.score || 0;
         const scoreB = b.score || 0;
         if (scoreA !== scoreB) {
-            return scoreB - scoreA; // Sort by score descending
+            return scoreB - scoreA;
         }
-        return (b.kills || 0) - (a.kills || 0); // If scores are equal, sort by kills
+        return (b.kills || 0) - (a.kills || 0);
     });
-    const topPlayers = sortedPlayers.slice(0, 8); // Show top 8 for better display
-
-    // Debug logging
-    console.log('[VictoryScreen] Players data:', {
-        currentPlayer,
-        allPlayers: players.length,
-        topPlayers: topPlayers.map(p => ({ name: p.name, score: p.score, kills: p.kills, level: p.level })),
-    });
+    const topPlayers = sortedPlayers.slice(0, 10);
 
     return (
         <View style={styles.overlay}>
             <Container style={styles.victoryContainer}>
-                {/* Title Section */}
-                <View style={styles.titleSection}>
-                    <Text style={{
-                        ...styles.titleText,
-                        color: isTimeout ? '#FFA500' : (isWinner ? '#00FF00' : '#FF4444'),
-                    }}>
-                        {isTimeout ? '⏱️ TIME\'S UP!' : (isWinner ? '🏆 VICTORY!' : '💀 DEFEAT')}
+                {/* Title */}
+                <Text style={{
+                    ...styles.titleText,
+                    color: isTimeout ? '#FFA500' : (isWinner ? '#00FF00' : '#FF4444'),
+                }}>
+                    {isTimeout ? 'TIME\'S UP' : (isWinner ? 'VICTORY' : 'DEFEAT')}
+                </Text>
+
+                {winnerName && (
+                    <Text style={styles.subtitleText}>
+                        {isTimeout ? 'Match Timeout' : `${winnerName} Wins!`}
                     </Text>
+                )}
 
-                    {winnerName && (
-                        <Text style={styles.winnerText}>
-                            {isTimeout ? `Match ended by timeout` : `${winnerName} wins the match!`}
-                        </Text>
-                    )}
-                </View>
+                <Space size="m" />
 
-                <Space size="l" />
-
-                {/* Desktop: Two Column Layout | Mobile: Single Column */}
+                {/* Desktop: Two Column | Mobile: Single Column */}
                 <View style={isMobile ? styles.mobileLayout : styles.desktopLayout}>
-                    {/* Left Column: Player Stats */}
+                    {/* Your Stats */}
                     {currentPlayer && (
-                        <View style={styles.statsColumn}>
-                            <View style={styles.statsBox}>
-                                <Text style={styles.sectionTitle}>
-                                    ⭐ YOUR PERFORMANCE
-                                </Text>
-                                <Space size="s" />
+                        <View style={styles.column}>
+                            <View style={styles.box}>
+                                <Text style={styles.boxTitle}>YOUR STATS</Text>
 
-                                {/* Score - Highlighted */}
-                                <View style={styles.statRowHighlight}>
-                                    <Text style={styles.statLabelLarge}>SCORE</Text>
-                                    <Text style={styles.statValueLarge}>{currentPlayer.score || 0}</Text>
-                                </View>
-
-                                {/* Level */}
-                                <View style={styles.statRow}>
-                                    <Text style={styles.statLabel}>Level</Text>
-                                    <Text style={styles.statValue}>{currentPlayer.level || 1}</Text>
-                                </View>
-
-                                {/* Kills */}
-                                <View style={styles.statRow}>
-                                    <Text style={styles.statLabel}>Kills</Text>
-                                    <Text style={styles.statValueGreen}>{currentPlayer.kills || 0}</Text>
-                                </View>
-
-                                {/* Deaths */}
-                                <View style={styles.statRow}>
-                                    <Text style={styles.statLabel}>Deaths</Text>
-                                    <Text style={styles.statValueRed}>{currentPlayer.deaths || 0}</Text>
-                                </View>
-
-                                {/* K/D Ratio - Highlighted */}
-                                <View style={styles.statRowHighlight}>
-                                    <Text style={styles.statLabelLarge}>K/D RATIO</Text>
-                                    <Text style={styles.statValueLarge}>
-                                        {currentPlayer.deaths ? ((currentPlayer.kills || 0) / currentPlayer.deaths).toFixed(2) : (currentPlayer.kills || 0)}
-                                    </Text>
-                                </View>
-
-                                {/* Best Streak */}
-                                <View style={styles.statRow}>
-                                    <Text style={styles.statLabel}>Best Streak</Text>
-                                    <Text style={styles.statValue}>{currentPlayer.highestKillStreak || 0} 🔥</Text>
-                                </View>
-
-                                {/* Accuracy */}
-                                <View style={styles.statRow}>
-                                    <Text style={styles.statLabel}>Accuracy</Text>
-                                    <Text style={styles.statValue}>{(currentPlayer.accuracy || 0).toFixed(1)}%</Text>
-                                </View>
-
-                                {/* XP */}
-                                <View style={styles.statRow}>
-                                    <Text style={styles.statLabel}>XP Earned</Text>
-                                    <Text style={styles.statValue}>{currentPlayer.xp || 0}</Text>
+                                <View style={styles.statsGrid}>
+                                    <View style={styles.gridItem}>
+                                        <Text style={styles.label}>Score</Text>
+                                        <Text style={styles.value}>{currentPlayer.score || 0}</Text>
+                                    </View>
+                                    <View style={styles.gridItem}>
+                                        <Text style={styles.label}>Level</Text>
+                                        <Text style={styles.value}>{currentPlayer.level || 1}</Text>
+                                    </View>
+                                    <View style={styles.gridItem}>
+                                        <Text style={styles.label}>Kills</Text>
+                                        <Text style={styles.valueGreen}>{currentPlayer.kills || 0}</Text>
+                                    </View>
+                                    <View style={styles.gridItem}>
+                                        <Text style={styles.label}>Deaths</Text>
+                                        <Text style={styles.valueRed}>{currentPlayer.deaths || 0}</Text>
+                                    </View>
+                                    <View style={styles.gridItem}>
+                                        <Text style={styles.label}>K/D</Text>
+                                        <Text style={styles.value}>
+                                            {currentPlayer.deaths ? ((currentPlayer.kills || 0) / currentPlayer.deaths).toFixed(2) : (currentPlayer.kills || 0)}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.gridItem}>
+                                        <Text style={styles.label}>Streak</Text>
+                                        <Text style={styles.value}>{currentPlayer.highestKillStreak || 0}</Text>
+                                    </View>
                                 </View>
                             </View>
                         </View>
                     )}
 
-                    {isMobile && <Space size="m" />}
+                    {isMobile && <Space size="s" />}
 
-                    {/* Right Column: Leaderboard */}
-                    <View style={styles.leaderboardColumn}>
-                        <View style={styles.leaderboardBox}>
-                            <Text style={styles.sectionTitle}>
-                                🏆 TOP PLAYERS
-                            </Text>
-                            <Space size="s" />
+                    {/* Leaderboard */}
+                    <View style={styles.column}>
+                        <View style={styles.box}>
+                            <Text style={styles.boxTitle}>TOP PLAYERS</Text>
 
-                            {/* Header */}
-                            <View style={styles.leaderboardHeader}>
-                                <Text style={styles.headerRank}>RANK</Text>
-                                <Text style={styles.headerName}>PLAYER</Text>
-                                <Text style={styles.headerStat}>SCORE</Text>
-                                <Text style={styles.headerStat}>KILLS</Text>
-                                <Text style={styles.headerStat}>LEVEL</Text>
+                            {/* Table Header */}
+                            <View style={styles.tableHeader}>
+                                <Text style={styles.thRank}>#</Text>
+                                <Text style={styles.thName}>Name</Text>
+                                <Text style={styles.thStat}>Score</Text>
+                                <Text style={styles.thStat}>Kills</Text>
                             </View>
 
                             {/* Player Rows */}
                             {topPlayers.map((player, index) => {
                                 const isCurrentPlayer = player.playerId === playerId;
-                                const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32']; // Gold, Silver, Bronze
-                                const rankColor = index < 3 ? rankColors[index] : '#FFD700';
-
                                 return (
                                     <View key={player.playerId} style={{
-                                        ...styles.leaderboardRow,
-                                        backgroundColor: isCurrentPlayer
-                                            ? 'rgba(78, 205, 196, 0.25)'
-                                            : index < 3
-                                                ? 'rgba(255, 215, 0, 0.1)'
-                                                : 'transparent',
-                                        border: isCurrentPlayer ? '2px solid #4ECDC4' : '1px solid rgba(255, 255, 255, 0.1)',
+                                        ...styles.tableRow,
+                                        backgroundColor: isCurrentPlayer ? 'rgba(78, 205, 196, 0.2)' : 'transparent',
                                     }}>
-                                        <Text style={{...styles.rankText, color: rankColor}}>
-                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                        <Text style={styles.tdRank}>
+                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                                         </Text>
                                         <Text style={{
-                                            ...styles.playerNameText,
-                                            color: isCurrentPlayer ? '#4ECDC4' : '#FFFFFF',
-                                            fontWeight: isCurrentPlayer ? 'bold' : '500',
+                                            ...styles.tdName,
+                                            color: isCurrentPlayer ? '#4ECDC4' : '#FFF',
                                         }}>
-                                            {isCurrentPlayer ? `${player.name} (YOU)` : player.name}
+                                            {isCurrentPlayer ? 'YOU' : player.name}
                                         </Text>
-                                        <Text style={styles.scoreText}>{player.score || 0}</Text>
-                                        <Text style={styles.killsText}>{player.kills || 0}</Text>
-                                        <Text style={styles.levelText}>{player.level || 1}</Text>
+                                        <Text style={styles.tdScore}>{player.score || 0}</Text>
+                                        <Text style={styles.tdKills}>{player.kills || 0}</Text>
                                     </View>
                                 );
                             })}
@@ -185,15 +138,10 @@ export const VictoryScreen = React.memo((props: VictoryScreenProps): React.React
                     </View>
                 </View>
 
-                <Space size="l" />
+                <Space size="m" />
 
                 {/* Close Button */}
-                <View
-                    style={styles.closeButton}
-                    onClick={onClose}
-                    onMouseEnter={(e: any) => e.currentTarget.style.transform = 'scale(1.05)'}
-                    onMouseLeave={(e: any) => e.currentTarget.style.transform = 'scale(1)'}
-                >
+                <View style={styles.closeButton} onClick={onClose}>
                     <Text style={styles.closeButtonText}>RETURN TO LOBBY</Text>
                 </View>
             </Container>
@@ -208,7 +156,7 @@ const styles: { [key: string]: CSSProperties } = {
         left: 0,
         width: '100%',
         height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -216,229 +164,170 @@ const styles: { [key: string]: CSSProperties } = {
         pointerEvents: 'auto',
     },
     victoryContainer: {
-        backgroundColor: 'rgba(15, 10, 16, 0.98)',
-        border: '4px solid rgba(78, 205, 196, 0.6)',
-        borderRadius: 20,
-        padding: isMobile ? 24 : 60,
-        maxWidth: isMobile ? '95%' : 1400,
-        width: isMobile ? '95%' : '90%',
-        maxHeight: '95%',
+        backgroundColor: 'rgba(20, 15, 25, 0.98)',
+        border: '2px solid rgba(78, 205, 196, 0.5)',
+        borderRadius: 12,
+        padding: isMobile ? 20 : 32,
+        maxWidth: isMobile ? '95%' : 1000,
+        width: isMobile ? '95%' : 'auto',
+        maxHeight: '90vh',
         overflow: 'auto',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 100px rgba(78, 205, 196, 0.2)',
-    },
-    titleSection: {
-        textAlign: 'center',
-        marginBottom: 20,
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.7)',
     },
     titleText: {
-        fontSize: isMobile ? 40 : 72,
+        fontSize: isMobile ? 28 : 42,
         fontWeight: 'bold',
         textAlign: 'center',
-        textShadow: '0 0 20px currentColor, 0 0 40px currentColor',
-        marginBottom: 16,
-        letterSpacing: 4,
+        letterSpacing: 3,
+        marginBottom: 4,
     },
-    winnerText: {
-        fontSize: isMobile ? 22 : 32,
+    subtitleText: {
+        fontSize: isMobile ? 16 : 20,
         color: '#FFD700',
         textAlign: 'center',
-        fontWeight: 'bold',
-        textShadow: '0 0 10px rgba(255, 215, 0, 0.5)',
+        fontWeight: '600',
     },
-    // Layout containers
+    // Layout
     desktopLayout: {
         display: 'flex',
         flexDirection: 'row',
-        gap: 32,
-        alignItems: 'stretch',
+        gap: 20,
     },
     mobileLayout: {
         display: 'flex',
         flexDirection: 'column',
-        gap: 16,
     },
-    statsColumn: {
+    column: {
         flex: 1,
         minWidth: 0,
     },
-    leaderboardColumn: {
-        flex: 1.2,
-        minWidth: 0,
+    // Box
+    box: {
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: 8,
+        padding: isMobile ? 12 : 16,
     },
-    sectionTitle: {
-        fontSize: isMobile ? 20 : 28,
+    boxTitle: {
+        fontSize: isMobile ? 14 : 16,
         color: '#FFD700',
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 16,
-        letterSpacing: 2,
-        textShadow: '0 0 10px rgba(255, 215, 0, 0.5)',
+        marginBottom: 12,
+        letterSpacing: 1,
     },
-    // Stats Box
-    statsBox: {
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        padding: isMobile ? 20 : 40,
-        borderRadius: 16,
-        border: '3px solid rgba(255, 215, 0, 0.6)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        height: '100%',
+    // Stats Grid
+    statsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: 12,
     },
-    statRow: {
+    gridItem: {
         display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        padding: isMobile ? '12px 8px' : '16px 12px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        minHeight: isMobile ? 40 : 56,
+        flexDirection: 'column',
         alignItems: 'center',
+        padding: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 6,
     },
-    statRowHighlight: {
+    label: {
+        fontSize: isMobile ? 11 : 13,
+        color: '#AAA',
+        marginBottom: 4,
+    },
+    value: {
+        fontSize: isMobile ? 16 : 20,
+        color: '#FFF',
+        fontWeight: 'bold',
+    },
+    valueGreen: {
+        fontSize: isMobile ? 16 : 20,
+        color: '#00FF00',
+        fontWeight: 'bold',
+    },
+    valueRed: {
+        fontSize: isMobile ? 16 : 20,
+        color: '#FF6B6B',
+        fontWeight: 'bold',
+    },
+    // Table
+    tableHeader: {
         display: 'flex',
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        padding: isMobile ? '14px 12px' : '20px 16px',
-        borderBottom: '2px solid rgba(255, 215, 0, 0.4)',
-        backgroundColor: 'rgba(255, 215, 0, 0.1)',
-        borderRadius: 8,
+        padding: '8px 4px',
+        borderBottom: '2px solid rgba(78, 205, 196, 0.5)',
         marginBottom: 8,
-        minHeight: isMobile ? 50 : 70,
-        alignItems: 'center',
     },
-    statLabel: {
-        color: '#CCCCCC',
-        fontSize: isMobile ? 16 : 20,
-        fontWeight: '500',
-    },
-    statValue: {
-        color: '#FFFFFF',
-        fontSize: isMobile ? 16 : 22,
+    thRank: {
+        width: isMobile ? 30 : 40,
+        fontSize: isMobile ? 11 : 13,
+        color: '#4ECDC4',
         fontWeight: 'bold',
     },
-    statValueGreen: {
-        color: '#00FF00',
-        fontSize: isMobile ? 16 : 22,
+    thName: {
+        flex: 1,
+        fontSize: isMobile ? 11 : 13,
+        color: '#4ECDC4',
         fontWeight: 'bold',
     },
-    statValueRed: {
-        color: '#FF6B6B',
-        fontSize: isMobile ? 16 : 22,
+    thStat: {
+        width: isMobile ? 45 : 55,
+        fontSize: isMobile ? 11 : 13,
+        color: '#4ECDC4',
         fontWeight: 'bold',
+        textAlign: 'right',
     },
-    statLabelLarge: {
+    tableRow: {
+        display: 'flex',
+        flexDirection: 'row',
+        padding: '6px 4px',
+        marginBottom: 4,
+        borderRadius: 4,
+    },
+    tdRank: {
+        width: isMobile ? 30 : 40,
+        fontSize: isMobile ? 13 : 15,
         color: '#FFD700',
-        fontSize: isMobile ? 18 : 24,
         fontWeight: 'bold',
-        letterSpacing: 1,
     },
-    statValueLarge: {
-        color: '#FFFFFF',
-        fontSize: isMobile ? 22 : 32,
-        fontWeight: 'bold',
-        textShadow: '0 0 10px rgba(255, 255, 255, 0.5)',
-    },
-    // Leaderboard Box
-    leaderboardBox: {
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        padding: isMobile ? 20 : 40,
-        borderRadius: 16,
-        border: '3px solid rgba(255, 255, 255, 0.5)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        height: '100%',
-    },
-    leaderboardHeader: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: isMobile ? '12px 12px' : '18px 16px',
-        borderBottom: '3px solid rgba(78, 205, 196, 0.6)',
-        marginBottom: 16,
-        minHeight: isMobile ? 44 : 60,
-        backgroundColor: 'rgba(78, 205, 196, 0.1)',
-        borderRadius: 8,
-    },
-    headerRank: {
-        color: '#4ECDC4',
-        fontSize: isMobile ? 14 : 18,
-        fontWeight: 'bold',
-        width: isMobile ? 50 : 80,
-        letterSpacing: 1,
-    },
-    headerName: {
-        color: '#4ECDC4',
-        fontSize: isMobile ? 14 : 18,
-        fontWeight: 'bold',
+    tdName: {
         flex: 1,
-        letterSpacing: 1,
-    },
-    headerStat: {
-        color: '#4ECDC4',
-        fontSize: isMobile ? 14 : 18,
-        fontWeight: 'bold',
-        width: isMobile ? 60 : 90,
-        textAlign: 'right',
-        letterSpacing: 1,
-    },
-    leaderboardRow: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: isMobile ? '12px 12px' : '18px 16px',
-        borderRadius: 8,
-        marginBottom: 10,
-        minHeight: isMobile ? 48 : 64,
-        transition: 'all 0.2s',
-    },
-    rankText: {
-        fontSize: isMobile ? 16 : 22,
-        fontWeight: 'bold',
-        width: isMobile ? 50 : 80,
-    },
-    playerNameText: {
-        fontSize: isMobile ? 16 : 20,
-        flex: 1,
+        fontSize: isMobile ? 13 : 15,
         fontWeight: '500',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
     },
-    scoreText: {
+    tdScore: {
+        width: isMobile ? 45 : 55,
+        fontSize: isMobile ? 13 : 15,
         color: '#00FF00',
-        fontSize: isMobile ? 16 : 20,
         fontWeight: 'bold',
-        width: isMobile ? 60 : 90,
         textAlign: 'right',
     },
-    killsText: {
+    tdKills: {
+        width: isMobile ? 45 : 55,
+        fontSize: isMobile ? 13 : 15,
         color: '#FF6B6B',
-        fontSize: isMobile ? 16 : 20,
         fontWeight: 'bold',
-        width: isMobile ? 60 : 90,
-        textAlign: 'right',
-    },
-    levelText: {
-        color: '#4ECDC4',
-        fontSize: isMobile ? 16 : 20,
-        fontWeight: 'bold',
-        width: isMobile ? 60 : 90,
         textAlign: 'right',
     },
     // Close Button
     closeButton: {
         backgroundColor: '#4ECDC4',
-        padding: isMobile ? '16px 32px' : '20px 60px',
-        borderRadius: 12,
+        padding: isMobile ? '12px 24px' : '14px 40px',
+        borderRadius: 8,
         cursor: 'pointer',
-        border: '3px solid rgba(255, 255, 255, 0.5)',
-        transition: 'all 0.3s',
+        border: '2px solid rgba(255, 255, 255, 0.3)',
         textAlign: 'center',
-        boxShadow: '0 4px 20px rgba(78, 205, 196, 0.4)',
         margin: '0 auto',
-        maxWidth: isMobile ? '100%' : 400,
+        maxWidth: 300,
+        transition: 'all 0.2s',
     },
     closeButtonText: {
-        color: '#FFFFFF',
-        fontSize: isMobile ? 18 : 24,
+        color: '#FFF',
+        fontSize: isMobile ? 14 : 16,
         fontWeight: 'bold',
-        letterSpacing: 2,
-        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+        letterSpacing: 1,
     },
 };

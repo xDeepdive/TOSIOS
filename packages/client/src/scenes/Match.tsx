@@ -354,8 +354,19 @@ export default class Match extends Component<IProps, IState> {
                     players={hud.players}
                     playersCount={hud.playersCount}
                     playersMaxCount={hud.playersMaxCount}
+                    playersAlive={hud.playersAlive}
+                    playersDead={hud.playersDead}
                     messages={hud.messages}
                     announce={hud.announce}
+                    playerLevel={hud.playerLevel}
+                    playerScore={hud.playerScore}
+                    playerKillStreak={hud.playerKillStreak}
+                    playerXP={hud.playerXP}
+                    playerHasSpeedBoost={hud.playerHasSpeedBoost}
+                    playerHasShield={hud.playerHasShield}
+                    playerHasRapidFire={hud.playerHasRapidFire}
+                    playerIsInvisible={hud.playerIsInvisible}
+                    playerHasDoubleDamage={hud.playerHasDoubleDamage}
                 />
             </View>
         );

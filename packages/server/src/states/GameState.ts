@@ -31,6 +31,9 @@ export class GameState extends Schema {
 
     private botCounter: number = 0; // Counter for bot IDs
 
+    // Monster system
+    private monsterCounter: number = 0; // Counter for monster IDs
+
     // Monster wave system
     private waveNumber: number = 0;
 
@@ -279,7 +282,7 @@ export class GameState extends Schema {
             spawner.x + Constants.PLAYER_SIZE / 2,
             spawner.y + Constants.PLAYER_SIZE / 2,
             Constants.PLAYER_SIZE / 2,
-            0,
+            Constants.PLAYER_MAX_LIVES,
             Constants.PLAYER_MAX_LIVES,
             name || id,
         );
@@ -380,9 +383,12 @@ export class GameState extends Schema {
             return;
         }
 
-        // Check if player can shoot
+        // Check if player can shoot (apply rapid fire multiplier if active)
+        const fireRate = player.hasRapidFire
+            ? Constants.BULLET_RATE * Constants.POWERUP_RAPID_FIRE_MULTIPLIER
+            : Constants.BULLET_RATE;
         const delta = ts - player.lastShootAt;
-        if (player.lastShootAt && delta < Constants.BULLET_RATE) {
+        if (player.lastShootAt && delta < fireRate) {
             return;
         }
         player.lastShootAt = ts;
@@ -550,7 +556,7 @@ export class GameState extends Schema {
                 monsterType,
             );
 
-            this.monsters.set(Maths.getRandomInt(0, 100000).toString(), monster);
+            this.monsters.set(`monster_${this.monsterCounter++}`, monster);
         }
     };
 
@@ -646,7 +652,15 @@ export class GameState extends Schema {
                 shooter.accuracy = shooter.shotsFired > 0 ? (shooter.shotsHit / shooter.shotsFired) * 100 : 0;
             }
 
-            player.hurt();
+            // Apply damage (2x if shooter has double damage powerup)
+            if (shooter && shooter.hasDoubleDamage) {
+                player.hurt();
+                if (player.isAlive) {
+                    player.hurt(); // Deal second damage
+                }
+            } else {
+                player.hurt();
+            }
 
             if (!player.isAlive) {
                 const killer = this.players.get(bullet.playerId);
@@ -918,7 +932,7 @@ export class GameState extends Schema {
     }
 
     private getRandomTeam(): Types.Teams {
-        return Math.random() < 0.5 ? 'blue' : 'red';
+        return Math.random() < 0.5 ? 'Blue' : 'Red';
     }
 
     //

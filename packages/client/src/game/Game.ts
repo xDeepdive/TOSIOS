@@ -651,6 +651,15 @@ export class Game {
             if (attributes.killStreak !== undefined) this.me.killStreak = attributes.killStreak;
             if (attributes.xp !== undefined) this.me.xp = attributes.xp;
 
+            // Debug logging
+            console.log('[Game] playerUpdate (me) stats:', {
+                level: this.me.level,
+                score: this.me.score,
+                killStreak: this.me.killStreak,
+                xp: this.me.xp,
+                fromServer: { level: attributes.level, score: attributes.score, killStreak: attributes.killStreak, xp: attributes.xp }
+            });
+
             // Update powerups
             if (attributes.hasSpeedBoost !== undefined) this.me.hasSpeedBoost = attributes.hasSpeedBoost;
             if (attributes.hasShield !== undefined) this.me.hasShield = attributes.hasShield;

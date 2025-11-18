@@ -43,6 +43,9 @@ export const Health = React.memo((props: HealthProps): React.ReactElement => {
         hasDoubleDamage,
     } = props;
 
+    // Debug logging
+    console.log('[Health] Stats:', { level, score, killStreak, xp, name });
+
         // Create list of hearts
         const hearts = [];
         for (let i = 0; i < maxLives; i++) {

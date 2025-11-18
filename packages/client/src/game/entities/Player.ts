@@ -158,6 +158,15 @@ export class Player extends BaseEntity {
         if (player.killStreak !== undefined) this.killStreak = player.killStreak;
         if (player.xp !== undefined) this.xp = player.xp;
 
+        // Debug logging
+        console.log(`[Player Constructor] ${player.name} stats:`, {
+            level: this.level,
+            score: this.score,
+            killStreak: this.killStreak,
+            xp: this.xp,
+            fromServer: { level: player.level, score: player.score, killStreak: player.killStreak, xp: player.xp }
+        });
+
         // Ghost
         if (isGhost) {
             this.visible = Constants.DEBUG;

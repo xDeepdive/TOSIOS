@@ -298,6 +298,15 @@ export default class Match extends Component<IProps, IState> {
     updateRoom = () => {
         const stats = this.game.getStats();
 
+        // Debug logging for stats
+        console.log('[Match] updateRoom stats:', {
+            playerLevel: stats.playerLevel,
+            playerScore: stats.playerScore,
+            playerKillStreak: stats.playerKillStreak,
+            playerXP: stats.playerXP,
+            playersCount: stats.playersCount,
+        });
+
         this.setState((prev) => ({
             ...prev,
             hud: {

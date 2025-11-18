@@ -13,8 +13,7 @@ interface VictoryScreenProps {
 }
 
 /**
- * Display victory/defeat screen with match stats
- * Minimal, compact design with no text overflow
+ * Victory screen - ultra compact, no overflow
  */
 export const VictoryScreen = React.memo((props: VictoryScreenProps): React.ReactElement | null => {
     const { winnerName, isTimeout, players, playerId, onClose } = props;
@@ -23,11 +22,9 @@ export const VictoryScreen = React.memo((props: VictoryScreenProps): React.React
         return null;
     }
 
-    // Find the current player
     const currentPlayer = players.find(p => p.playerId === playerId);
     const isWinner = currentPlayer?.name === winnerName;
 
-    // Sort players by score (or kills if score is equal) for leaderboard
     const sortedPlayers = [...players].sort((a, b) => {
         const scoreA = a.score || 0;
         const scoreB = b.score || 0;
@@ -40,101 +37,94 @@ export const VictoryScreen = React.memo((props: VictoryScreenProps): React.React
 
     return (
         <View style={styles.overlay}>
-            <Container style={styles.victoryContainer}>
+            <Container style={styles.container}>
                 {/* Title */}
                 <Text style={{
-                    ...styles.titleText,
+                    ...styles.title,
                     color: isTimeout ? '#FFA500' : (isWinner ? '#00FF00' : '#FF4444'),
                 }}>
-                    {isTimeout ? 'TIME UP' : (isWinner ? 'VICTORY' : 'DEFEAT')}
+                    {isTimeout ? 'TIME UP' : (isWinner ? 'WIN' : 'LOSE')}
                 </Text>
 
                 {winnerName && (
-                    <Text style={styles.subtitleText}>
-                        {isTimeout ? 'Timeout' : `${winnerName} Wins`}
+                    <Text style={styles.subtitle}>
+                        {isTimeout ? 'Match Timeout' : `${winnerName.substring(0, 15)} Wins`}
                     </Text>
                 )}
 
-                <Space size="s" />
+                <Space size="xs" />
 
-                {/* Two Column Layout */}
-                <View style={isMobile ? styles.mobileLayout : styles.desktopLayout}>
-                    {/* Your Stats */}
+                {/* Content */}
+                <View style={styles.content}>
+                    {/* Stats */}
                     {currentPlayer && (
-                        <View style={styles.column}>
+                        <View style={styles.col}>
                             <View style={styles.box}>
                                 <Text style={styles.boxTitle}>YOUR STATS</Text>
-
-                                <View style={styles.statsGrid}>
-                                    <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>Score</Text>
-                                        <Text style={styles.statValue}>{currentPlayer.score || 0}</Text>
+                                <View style={styles.grid}>
+                                    <View style={styles.cell}>
+                                        <Text style={styles.cellLabel}>Score</Text>
+                                        <Text style={styles.cellValue}>{currentPlayer.score || 0}</Text>
                                     </View>
-                                    <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>Level</Text>
-                                        <Text style={styles.statValue}>{currentPlayer.level || 1}</Text>
+                                    <View style={styles.cell}>
+                                        <Text style={styles.cellLabel}>Lvl</Text>
+                                        <Text style={styles.cellValue}>{currentPlayer.level || 1}</Text>
                                     </View>
-                                    <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>Kills</Text>
-                                        <Text style={styles.statValueGreen}>{currentPlayer.kills || 0}</Text>
+                                    <View style={styles.cell}>
+                                        <Text style={styles.cellLabel}>Kills</Text>
+                                        <Text style={styles.cellValueGreen}>{currentPlayer.kills || 0}</Text>
                                     </View>
-                                    <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>Deaths</Text>
-                                        <Text style={styles.statValueRed}>{currentPlayer.deaths || 0}</Text>
+                                    <View style={styles.cell}>
+                                        <Text style={styles.cellLabel}>Death</Text>
+                                        <Text style={styles.cellValueRed}>{currentPlayer.deaths || 0}</Text>
                                     </View>
-                                    <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>K/D</Text>
-                                        <Text style={styles.statValue}>
+                                    <View style={styles.cell}>
+                                        <Text style={styles.cellLabel}>K/D</Text>
+                                        <Text style={styles.cellValue}>
                                             {currentPlayer.deaths ? ((currentPlayer.kills || 0) / currentPlayer.deaths).toFixed(1) : (currentPlayer.kills || 0)}
                                         </Text>
                                     </View>
-                                    <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>Streak</Text>
-                                        <Text style={styles.statValue}>{currentPlayer.highestKillStreak || 0}</Text>
+                                    <View style={styles.cell}>
+                                        <Text style={styles.cellLabel}>Stk</Text>
+                                        <Text style={styles.cellValue}>{currentPlayer.highestKillStreak || 0}</Text>
                                     </View>
                                 </View>
                             </View>
                         </View>
                     )}
 
-                    {isMobile && <Space size="s" />}
-
                     {/* Leaderboard */}
-                    <View style={styles.column}>
+                    <View style={styles.col}>
                         <View style={styles.box}>
-                            <Text style={styles.boxTitle}>LEADERBOARD</Text>
-
-                            {/* Compact Table */}
+                            <Text style={styles.boxTitle}>TOP PLAYERS</Text>
                             <View style={styles.table}>
                                 {/* Header */}
-                                <View style={styles.tableRow}>
+                                <View style={styles.tr}>
                                     <Text style={styles.thRank}>#</Text>
-                                    <Text style={styles.thName}>Player</Text>
-                                    <Text style={styles.thStat}>Pts</Text>
-                                    <Text style={styles.thStat}>K</Text>
+                                    <Text style={styles.thName}>Name</Text>
+                                    <Text style={styles.thNum}>Pts</Text>
+                                    <Text style={styles.thNum}>K</Text>
                                 </View>
-
                                 {/* Rows */}
-                                {topPlayers.map((player, index) => {
-                                    const isCurrentPlayer = player.playerId === playerId;
-                                    const displayName = isCurrentPlayer ? 'YOU' : (player.name.length > 12 ? player.name.substring(0, 12) + '...' : player.name);
-
+                                {topPlayers.map((player, i) => {
+                                    const me = player.playerId === playerId;
+                                    const name = me ? 'YOU' : player.name.substring(0, 10);
                                     return (
                                         <View key={player.playerId} style={{
-                                            ...styles.tableRow,
-                                            backgroundColor: isCurrentPlayer ? 'rgba(78, 205, 196, 0.2)' : 'transparent',
+                                            ...styles.tr,
+                                            backgroundColor: me ? 'rgba(78, 205, 196, 0.15)' : 'transparent',
                                         }}>
                                             <Text style={styles.tdRank}>
-                                                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                                                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                                             </Text>
                                             <Text style={{
                                                 ...styles.tdName,
-                                                color: isCurrentPlayer ? '#4ECDC4' : '#FFF',
+                                                color: me ? '#4ECDC4' : '#FFF',
                                             }}>
-                                                {displayName}
+                                                {name}
                                             </Text>
-                                            <Text style={styles.tdScore}>{player.score || 0}</Text>
-                                            <Text style={styles.tdKills}>{player.kills || 0}</Text>
+                                            <Text style={styles.tdNum}>{player.score || 0}</Text>
+                                            <Text style={styles.tdNum}>{player.kills || 0}</Text>
                                         </View>
                                     );
                                 })}
@@ -143,11 +133,11 @@ export const VictoryScreen = React.memo((props: VictoryScreenProps): React.React
                     </View>
                 </View>
 
-                <Space size="s" />
+                <Space size="xs" />
 
-                {/* Close Button */}
-                <View style={styles.closeButton} onClick={onClose}>
-                    <Text style={styles.closeButtonText}>RETURN TO LOBBY</Text>
+                {/* Button */}
+                <View style={styles.btn} onClick={onClose}>
+                    <Text style={styles.btnText}>RETURN TO LOBBY</Text>
                 </View>
             </Container>
         </View>
@@ -168,90 +158,83 @@ const styles: { [key: string]: CSSProperties } = {
         zIndex: 1000,
         pointerEvents: 'auto',
     },
-    victoryContainer: {
+    container: {
         backgroundColor: 'rgba(20, 15, 25, 0.98)',
         border: '2px solid rgba(78, 205, 196, 0.5)',
-        borderRadius: 10,
-        padding: isMobile ? 16 : 24,
-        maxWidth: isMobile ? '95%' : 800,
-        width: isMobile ? '95%' : '800px',
-        maxHeight: '85vh',
+        borderRadius: 8,
+        padding: isMobile ? 12 : 16,
+        width: isMobile ? '95%' : '700px',
+        maxWidth: '95%',
+        maxHeight: '80vh',
         overflow: 'auto',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7)',
     },
-    titleText: {
-        fontSize: isMobile ? 24 : 36,
+    title: {
+        fontSize: isMobile ? 20 : 28,
         fontWeight: 'bold',
         textAlign: 'center',
         letterSpacing: 2,
-        marginBottom: 4,
     },
-    subtitleText: {
-        fontSize: isMobile ? 14 : 16,
+    subtitle: {
+        fontSize: isMobile ? 12 : 14,
         color: '#FFD700',
         textAlign: 'center',
         fontWeight: '600',
+        marginTop: 2,
     },
-    // Layout
-    desktopLayout: {
+    content: {
         display: 'flex',
-        flexDirection: 'row',
-        gap: 16,
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: 12,
     },
-    mobileLayout: {
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    column: {
+    col: {
         flex: 1,
         minWidth: 0,
     },
-    // Box
     box: {
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         border: '1px solid rgba(255, 255, 255, 0.2)',
         borderRadius: 6,
-        padding: isMobile ? 10 : 12,
+        padding: 10,
     },
     boxTitle: {
-        fontSize: isMobile ? 12 : 14,
+        fontSize: 12,
         color: '#FFD700',
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 10,
-        letterSpacing: 1,
+        marginBottom: 8,
     },
-    // Stats Grid (2x3)
-    statsGrid: {
+    // Stats grid
+    grid: {
         display: 'grid',
         gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: 8,
+        gap: 6,
     },
-    statItem: {
+    cell: {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: 6,
+        padding: 4,
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderRadius: 4,
     },
-    statLabel: {
-        fontSize: isMobile ? 10 : 11,
+    cellLabel: {
+        fontSize: 9,
         color: '#AAA',
         marginBottom: 2,
     },
-    statValue: {
-        fontSize: isMobile ? 14 : 16,
+    cellValue: {
+        fontSize: 14,
         color: '#FFF',
         fontWeight: 'bold',
     },
-    statValueGreen: {
-        fontSize: isMobile ? 14 : 16,
+    cellValueGreen: {
+        fontSize: 14,
         color: '#00FF00',
         fontWeight: 'bold',
     },
-    statValueRed: {
-        fontSize: isMobile ? 14 : 16,
+    cellValueRed: {
+        fontSize: 14,
         color: '#FF6B6B',
         fontWeight: 'bold',
     },
@@ -259,76 +242,68 @@ const styles: { [key: string]: CSSProperties } = {
     table: {
         width: '100%',
     },
-    tableRow: {
+    tr: {
         display: 'flex',
         flexDirection: 'row',
-        padding: '4px 2px',
-        marginBottom: 2,
+        padding: '3px 2px',
+        marginBottom: 1,
         borderRadius: 3,
         alignItems: 'center',
     },
     thRank: {
-        width: isMobile ? 28 : 32,
-        fontSize: isMobile ? 10 : 11,
+        width: 26,
+        fontSize: 9,
         color: '#4ECDC4',
         fontWeight: 'bold',
     },
     thName: {
         flex: 1,
-        fontSize: isMobile ? 10 : 11,
+        fontSize: 9,
         color: '#4ECDC4',
         fontWeight: 'bold',
     },
-    thStat: {
-        width: isMobile ? 38 : 42,
-        fontSize: isMobile ? 10 : 11,
+    thNum: {
+        width: 35,
+        fontSize: 9,
         color: '#4ECDC4',
         fontWeight: 'bold',
         textAlign: 'right',
     },
     tdRank: {
-        width: isMobile ? 28 : 32,
-        fontSize: isMobile ? 12 : 13,
+        width: 26,
+        fontSize: 11,
         color: '#FFD700',
         fontWeight: 'bold',
     },
     tdName: {
         flex: 1,
-        fontSize: isMobile ? 12 : 13,
+        fontSize: 11,
         fontWeight: '500',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
     },
-    tdScore: {
-        width: isMobile ? 38 : 42,
-        fontSize: isMobile ? 12 : 13,
+    tdNum: {
+        width: 35,
+        fontSize: 11,
         color: '#00FF00',
         fontWeight: 'bold',
         textAlign: 'right',
     },
-    tdKills: {
-        width: isMobile ? 38 : 42,
-        fontSize: isMobile ? 12 : 13,
-        color: '#FF6B6B',
-        fontWeight: 'bold',
-        textAlign: 'right',
-    },
-    // Close Button
-    closeButton: {
+    btn: {
         backgroundColor: '#4ECDC4',
-        padding: isMobile ? '10px 20px' : '12px 30px',
+        padding: '10px 24px',
         borderRadius: 6,
         cursor: 'pointer',
         border: '2px solid rgba(255, 255, 255, 0.3)',
         textAlign: 'center',
         margin: '0 auto',
-        maxWidth: 250,
+        maxWidth: 220,
         transition: 'all 0.2s',
     },
-    closeButtonText: {
+    btnText: {
         color: '#FFF',
-        fontSize: isMobile ? 13 : 14,
+        fontSize: 12,
         fontWeight: 'bold',
         letterSpacing: 1,
     },

@@ -37,6 +37,8 @@ export interface Stats {
     players: Models.PlayerJSON[];
     playersCount: number;
     playersMaxCount: number;
+    playersAlive: number;
+    playersDead: number;
     // New player stats
     playerLevel?: number;
     playerScore?: number;
@@ -560,6 +562,10 @@ export class Game {
             hasDoubleDamage: player.hasDoubleDamage,
         }));
 
+        // Calculate alive/dead player counts
+        const playersAlive = players.filter(p => p.lives > 0).length;
+        const playersDead = players.filter(p => p.lives === 0).length;
+
         return {
             gameMode: this.mode || '',
             gameModeEndsAt: this.lobbyEndsAt || this.gameEndsAt,
@@ -571,6 +577,8 @@ export class Game {
             players,
             playersCount: players.length,
             playersMaxCount: this.maxPlayers,
+            playersAlive,
+            playersDead,
             // New stats for the current player
             playerLevel: this.me ? this.me.level : 1,
             playerScore: this.me ? this.me.score : 0,
@@ -650,6 +658,9 @@ export class Game {
             if (attributes.score !== undefined) this.me.score = attributes.score;
             if (attributes.killStreak !== undefined) this.me.killStreak = attributes.killStreak;
             if (attributes.xp !== undefined) this.me.xp = attributes.xp;
+            if (attributes.accuracy !== undefined) this.me.accuracy = attributes.accuracy;
+            if (attributes.deaths !== undefined) this.me.deaths = attributes.deaths;
+            if (attributes.highestKillStreak !== undefined) this.me.highestKillStreak = attributes.highestKillStreak;
 
             // Debug logging
             console.log('[Game] playerUpdate (me) stats:', {
@@ -657,7 +668,18 @@ export class Game {
                 score: this.me.score,
                 killStreak: this.me.killStreak,
                 xp: this.me.xp,
-                fromServer: { level: attributes.level, score: attributes.score, killStreak: attributes.killStreak, xp: attributes.xp }
+                accuracy: this.me.accuracy,
+                deaths: this.me.deaths,
+                highestKillStreak: this.me.highestKillStreak,
+                fromServer: {
+                    level: attributes.level,
+                    score: attributes.score,
+                    killStreak: attributes.killStreak,
+                    xp: attributes.xp,
+                    accuracy: attributes.accuracy,
+                    deaths: attributes.deaths,
+                    highestKillStreak: attributes.highestKillStreak
+                }
             });
 
             // Update powerups
@@ -721,6 +743,9 @@ export class Game {
             if (attributes.score !== undefined) player.score = attributes.score;
             if (attributes.killStreak !== undefined) player.killStreak = attributes.killStreak;
             if (attributes.xp !== undefined) player.xp = attributes.xp;
+            if (attributes.accuracy !== undefined) player.accuracy = attributes.accuracy;
+            if (attributes.deaths !== undefined) player.deaths = attributes.deaths;
+            if (attributes.highestKillStreak !== undefined) player.highestKillStreak = attributes.highestKillStreak;
 
             // Update powerups
             if (attributes.hasSpeedBoost !== undefined) player.hasSpeedBoost = attributes.hasSpeedBoost;

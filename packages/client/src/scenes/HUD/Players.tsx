@@ -12,11 +12,15 @@ export const Players = React.memo(
     (props: {
         count?: number;
         maxCount?: number;
+        alive?: number;
+        dead?: number;
         style?: CSSProperties;
         onMenuClicked: () => void;
     }): React.ReactElement => {
-        const { count, maxCount, style, onMenuClicked: onMenuPressed } = props;
-        const playersText = isMobile ? `${count}/${maxCount}` : `Players (${count}/${maxCount})`;
+        const { count, maxCount, alive, dead, style, onMenuClicked: onMenuPressed } = props;
+        const playersText = isMobile
+            ? `${count}/${maxCount}`
+            : `Players: ${count}/${maxCount} (${alive || 0} alive, ${dead || 0} dead)`;
 
         return (
             <Container

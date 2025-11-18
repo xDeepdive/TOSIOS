@@ -19,6 +19,8 @@ export interface HUDProps {
     players: Models.PlayerJSON[];
     playersCount: number;
     playersMaxCount: number;
+    playersAlive: number;
+    playersDead: number;
     messages: Models.MessageJSON[];
     announce?: string;
     // New stats
@@ -56,6 +58,8 @@ export const HUD = React.memo(
             players,
             playersCount,
             playersMaxCount,
+            playersAlive,
+            playersDead,
             messages,
             announce,
             playerLevel,
@@ -167,6 +171,8 @@ export const HUD = React.memo(
                 <Players
                     count={playersCount}
                     maxCount={playersMaxCount}
+                    alive={playersAlive}
+                    dead={playersDead}
                     style={styles.players}
                     onMenuClicked={() => setMenuOpened(true)}
                 />

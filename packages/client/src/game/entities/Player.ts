@@ -66,6 +66,12 @@ export class Player extends BaseEntity {
 
     public xp: number = 0;
 
+    public accuracy: number = 0;
+
+    public deaths: number = 0;
+
+    public highestKillStreak: number = 0;
+
     // Computed
     private _isGhost: boolean = false;
 
@@ -157,6 +163,9 @@ export class Player extends BaseEntity {
         if (player.score !== undefined) this.score = player.score;
         if (player.killStreak !== undefined) this.killStreak = player.killStreak;
         if (player.xp !== undefined) this.xp = player.xp;
+        if (player.accuracy !== undefined) this.accuracy = player.accuracy;
+        if (player.deaths !== undefined) this.deaths = player.deaths;
+        if (player.highestKillStreak !== undefined) this.highestKillStreak = player.highestKillStreak;
 
         // Debug logging
         console.log(`[Player Constructor] ${player.name} stats:`, {
@@ -164,7 +173,18 @@ export class Player extends BaseEntity {
             score: this.score,
             killStreak: this.killStreak,
             xp: this.xp,
-            fromServer: { level: player.level, score: player.score, killStreak: player.killStreak, xp: player.xp }
+            accuracy: this.accuracy,
+            deaths: this.deaths,
+            highestKillStreak: this.highestKillStreak,
+            fromServer: {
+                level: player.level,
+                score: player.score,
+                killStreak: player.killStreak,
+                xp: player.xp,
+                accuracy: player.accuracy,
+                deaths: player.deaths,
+                highestKillStreak: player.highestKillStreak
+            }
         });
 
         // Ghost

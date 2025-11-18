@@ -51,6 +51,8 @@ export class Game extends Schema {
         this.mapName = attributes.mapName;
         this.maxPlayers = attributes.maxPlayers;
         this.mode = attributes.mode;
+        this.lobbyEndsAt = 0;
+        this.gameEndsAt = 0;
         this.onWaitingStart = attributes.onWaitingStart;
         this.onLobbyStart = attributes.onLobbyStart;
         this.onGameStart = attributes.onGameStart;
@@ -154,21 +156,21 @@ export class Game extends Schema {
 
     // Start
     startWaiting() {
-        this.lobbyEndsAt = undefined;
-        this.gameEndsAt = undefined;
+        this.lobbyEndsAt = 0;
+        this.gameEndsAt = 0;
         this.state = 'waiting';
         this.onWaitingStart();
     }
 
     startLobby() {
         this.lobbyEndsAt = Date.now() + Constants.LOBBY_DURATION;
-        this.gameEndsAt = undefined;
+        this.gameEndsAt = 0;
         this.state = 'lobby';
         this.onLobbyStart();
     }
 
     startGame() {
-        this.lobbyEndsAt = undefined;
+        this.lobbyEndsAt = 0;
         this.gameEndsAt = Date.now() + Constants.GAME_DURATION;
         this.state = 'game';
         this.onGameStart();

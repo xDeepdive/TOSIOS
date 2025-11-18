@@ -63,7 +63,7 @@ export default class Home extends Component<IProps, IState> {
             isNewRoom: false,
             roomName: localStorage.getItem('roomName') || '',
             roomMap: MapsList[0].value,
-            roomMaxPlayers: PlayersCountList[0].value,
+            roomMaxPlayers: 16, // Always 16 players
             mode: GameModesList[0].value,
             rooms: [],
             timer: null,
@@ -325,21 +325,8 @@ export default class Home extends Component<IProps, IState> {
                         />
                         <Space size="s" />
 
-                        {/* Players */}
-                        <Text>Max players:</Text>
-                        <Space size="xxs" />
-                        <Select
-                            value={roomMaxPlayers}
-                            values={PlayersCountList}
-                            onChange={(event: any) => {
-                                this.setState({ roomMaxPlayers: event.target.value });
-                                analytics.track({
-                                    category: 'Game',
-                                    action: 'Players',
-                                    value: event.target.value,
-                                });
-                            }}
-                        />
+                        {/* Players - Fixed at 16 */}
+                        <Text>Max players: 16 (Fixed)</Text>
                         <Space size="s" />
 
                         {/* Mode */}

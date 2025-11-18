@@ -9,11 +9,20 @@ import { isMobile } from 'react-device-detect';
 export const Time = React.memo(
     (props: { mode: string; endsAt: number; style?: CSSProperties }): React.ReactElement => {
         const { mode, endsAt, style } = props;
-        const [timeText, setTimeText] = React.useState('00:00');
+        const [timeText, setTimeText] = React.useState('--:--');
 
         React.useEffect(() => {
+            // Debug logging
+            console.log('[Time] Timer update:', { mode, endsAt, hasTimer: !!endsAt });
+
+            // If no timer is set (waiting state), show --:--
+            if (!endsAt || endsAt === 0) {
+                setTimeText('--:--');
+                return;
+            }
+
             const interval = setInterval(() => {
-                const delta = endsAt ? endsAt - Date.now() : 0;
+                const delta = endsAt - Date.now();
                 if (delta > 0) {
                     const minutesLeft = getMinutes(delta / 1000);
                     const secondsLeft = getSeconds(delta / 1000);
@@ -26,7 +35,7 @@ export const Time = React.memo(
             }, 500);
 
             return () => clearInterval(interval);
-        }, [endsAt]);
+        }, [endsAt, mode]);
 
         return (
             <Container

@@ -835,10 +835,22 @@ export class GameState extends Schema {
             Constants.BOTS_DIFFICULTY as 'easy' | 'medium' | 'hard',
         );
 
-        // Get random spawn position
-        const spawner = this.getSpawnerRandomly();
-        const x = spawner.x + Constants.PLAYER_SIZE / 2;
-        const y = spawner.y + Constants.PLAYER_SIZE / 2;
+        // Get random spawn position - ensure it's not in a wall
+        let spawner = this.getSpawnerRandomly();
+        let x = spawner.x + Constants.PLAYER_SIZE / 2;
+        let y = spawner.y + Constants.PLAYER_SIZE / 2;
+
+        // Verify spawn position is valid (not in wall)
+        let attempts = 0;
+        const testBody = new Geometry.CircleBody(x, y, Constants.PLAYER_SIZE / 2);
+        while (this.walls.collidesWithCircle(testBody) && attempts < 20) {
+            spawner = this.getSpawnerRandomly();
+            x = spawner.x + Constants.PLAYER_SIZE / 2;
+            y = spawner.y + Constants.PLAYER_SIZE / 2;
+            testBody.x = x;
+            testBody.y = y;
+            attempts++;
+        }
 
         // Create bot player
         const bot = new Player(

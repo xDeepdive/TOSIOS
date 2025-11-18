@@ -35,6 +35,27 @@ export class Monster extends BaseEntity {
 
         this.monsterType = monster.type;
 
+        // Apply color tint based on monster type for visual distinction
+        const tints = {
+            bat: 0xFFFFFF,        // White (default)
+            spider: 0x8B4513,     // Brown
+            golem: 0x808080,      // Gray/Stone
+            ghost: 0xE0E0FF,      // Pale blue/white
+            boss: 0xFF0000,       // Red
+        };
+        this.sprite.tint = tints[monster.type];
+
+        // Adjust scale based on monster type
+        const scales = {
+            bat: 2,
+            spider: 2.2,
+            golem: 2.5,
+            ghost: 2.3,
+            boss: 3.0,
+        };
+        const baseScale = scales[monster.type];
+        this.sprite.scale.set(baseScale, baseScale);
+
         // Shadow
         this._shadow = new Graphics();
         this._shadow.zIndex = ZINDEXES.SHADOW;
@@ -74,12 +95,16 @@ export class Monster extends BaseEntity {
 
     set rotation(rotation: number) {
         this._direction = getDirection(rotation);
+
+        // Get the current absolute scale (preserve monster type scaling)
+        const currentScale = Math.abs(this.sprite.scale.x);
+
         switch (this._direction) {
             case 'left':
-                this.sprite.scale.x = -2;
+                this.sprite.scale.x = -currentScale;
                 break;
             case 'right':
-                this.sprite.scale.x = 2;
+                this.sprite.scale.x = currentScale;
                 break;
             default:
                 break;
@@ -117,10 +142,15 @@ function getDirection(rotation: number): MonsterDirection {
 
 /**
  * Get textures for different monster types.
- * TODO: Add unique sprites for each monster type
+ * Note: Currently all monsters use bat sprite with different colors/scales for distinction.
+ * Each monster type has unique tint and size (see constructor).
  */
 function getMonsterTextures(type: Models.MonsterType): any {
-    // For now, all monsters use bat texture
-    // Future: Add unique textures for spider, golem, ghost, boss
+    // All monsters use bat texture with type-specific tinting:
+    // - Bat: White (default)
+    // - Spider: Brown
+    // - Golem: Gray/Stone
+    // - Ghost: Pale blue
+    // - Boss: Red (larger)
     return MonstersTextures.Bat;
 }

@@ -506,31 +506,33 @@ export class BotAI {
     }
 
     /**
-     * Get bot name based on difficulty
+     * Get bot name - random human-like names
      */
     static getBotName(index: number, difficulty: BotDifficulty): string {
-        const prefixes = {
-            easy: ['Noob', 'Beginner', 'Rookie', 'Newbie'],
-            medium: ['Bot', 'AI', 'Fighter', 'Player'],
-            hard: ['Elite', 'Pro', 'Master', 'Terminator'],
-        };
-
         const names = [
-            'Alpha',
-            'Beta',
-            'Gamma',
-            'Delta',
-            'Epsilon',
-            'Zeta',
-            'Eta',
-            'Theta',
-            'Iota',
-            'Kappa',
+            // Popular names from various cultures
+            'Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey',
+            'Riley', 'Avery', 'Quinn', 'Blake', 'Cameron',
+            'Dakota', 'Reese', 'Parker', 'Skyler', 'Phoenix',
+            'River', 'Sage', 'Rowan', 'Charlie', 'Sam',
+            'Drew', 'Jesse', 'Kai', 'Rory', 'Finley',
+            'Ash', 'Logan', 'Hunter', 'Tyler', 'Hayden',
+            'Peyton', 'Kendall', 'Jamie', 'Devon', 'Payton',
+            'Adrian', 'Ellis', 'Emerson', 'Kyle', 'Ryan',
+            'Max', 'Leo', 'Mia', 'Zoe', 'Luna',
+            'Nova', 'Aria', 'Cole', 'Jay', 'Kai',
         ];
 
-        const prefix = prefixes[difficulty][index % prefixes[difficulty].length];
-        const name = names[index % names.length];
+        // Add some variation with difficulty indicators (subtle)
+        const suffixes = {
+            easy: ['Jr', '', '', '', ''],  // Mostly no suffix
+            medium: ['', '', '', 'Pro', ''],  // Occasional Pro
+            hard: ['', 'Pro', 'X', 'V', 'Prime'],  // More badass suffixes
+        };
 
-        return `${prefix}_${name}`;
+        const baseName = names[index % names.length];
+        const suffix = suffixes[difficulty][index % suffixes[difficulty].length];
+
+        return suffix ? `${baseName}${suffix}` : baseName;
     }
 }
